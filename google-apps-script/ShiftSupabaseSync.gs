@@ -3,7 +3,7 @@
  *
  * 사전 설정:
  * Apps Script > 프로젝트 설정 > 스크립트 속성에 아래 두 값을 저장합니다.
- * SUPABASE_URL=https://ppqfzzhtirwzwmtnzoak.supabase.co
+ * SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
  * SUPABASE_SERVICE_ROLE_KEY=Supabase의 legacy service_role 키
  *
  * 주의: SERVICE_ROLE 키를 셀, 소스 코드, 웹사이트에 적지 마세요.

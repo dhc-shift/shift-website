@@ -53,7 +53,7 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    case when lower(new.email) = 'shiftysdh@gmail.com' then 'admin'::public.user_role else 'member'::public.user_role end
+    'member'::public.user_role
   );
   return new;
 end;
