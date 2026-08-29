@@ -108,7 +108,7 @@ function App(){
         <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
         <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>
         <Route path="/contact" element={<Contact/>}/>
-        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
+        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>
         <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} refresh={()=>loadData(user)}/>}/>
