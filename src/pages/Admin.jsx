@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
+import { Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
 import { eventTone, typeColor } from '../data.js';
 import { supabase } from '../supabase.js';
 import { ActivityIcon, AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
@@ -13,16 +13,18 @@ export default function AdminPage({ profile, newsletters, events, members, notic
 
 
 function ActivityAdmin({items,roster,refresh,setNotice}){
-  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public'};
+  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public',status:'모집 중'};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null); // 수정 중인 활동 (원본 객체)
   const [poster,setPoster]=useState(null);
   const [saving,setSaving]=useState(false);
   const [memberEdit,setMemberEdit]=useState(null); // 참여자 편집 중인 활동 id
   const [pick,setPick]=useState('');
+  const [photoEdit,setPhotoEdit]=useState(null); // 사진 편집 중인 활동 id
+  const [photoBusy,setPhotoBusy]=useState(false);
   const startEdit=item=>{
     setEditing(item);setPoster(null);
-    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access});
+    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access,status:item.status});
     window.scrollTo({top:0,behavior:'smooth'});
   };
   const cancelEdit=()=>{setEditing(null);setForm(empty);setPoster(null)};
@@ -69,6 +71,36 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     const {error}=await supabase.from('activity_members').delete().eq('id',m.id);
     setNotice(error?error.message:'참여자가 제외되었습니다.');refresh();
   };
+  const compressPhoto=async file=>{
+    // 서버 용량·전송량 절약: 최대 1600px JPEG로 압축
+    const bitmap=await createImageBitmap(file);
+    const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    return new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.85));
+  };
+  const addPhotos=async(item,files)=>{
+    if(!files.length)return;
+    setPhotoBusy(true);
+    for(const file of files){
+      if(!/^image\//.test(file.type))continue;
+      try{
+        const blob=await compressPhoto(file);
+        const path=`gallery/${item.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+        const {error:uploadError}=await supabase.storage.from('posters').upload(path,blob,{contentType:'image/jpeg'});
+        if(uploadError){setNotice(uploadError.message);continue}
+        const {error}=await supabase.from('activity_photos').insert({activity_id:item.id,photo_path:path});
+        if(error)setNotice(error.message);
+      }catch{setNotice('사진 처리에 실패했습니다.')}
+    }
+    setPhotoBusy(false);setNotice('사진이 업로드되었습니다.');refresh();
+  };
+  const removePhoto=async ph=>{
+    await supabase.storage.from('posters').remove([ph.photo_path]);
+    const {error}=await supabase.from('activity_photos').delete().eq('id',ph.id);
+    setNotice(error?error.message:'사진이 삭제되었습니다.');refresh();
+  };
   return <><SectionHead eyebrow="ACTIVITIES" title={editing?`활동 수정 — ${editing.title}`:'활동 관리'} text="활동을 등록하고 참여 부원을 지정합니다. '완료' 처리하면 참여자 이름과 함께 아카이브에 표시됩니다."/>
   <form className="admin-form" onSubmit={submit}>
     <label>활동명<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
@@ -82,6 +114,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     <label>신청 링크 (구글폼 등)<input type="url" value={form.apply_url} onChange={e=>setForm({...form,apply_url:e.target.value})} placeholder="https://forms.gle/..."/></label>
     <label>신청 방법 안내 (링크가 없을 때 표시)<input value={form.apply_note} onChange={e=>setForm({...form,apply_note:e.target.value})} placeholder="회장에게 카톡으로 연락해주세요"/></label>
     <label>공개 대상<select value={form.access} onChange={e=>setForm({...form,access:e.target.value})}><option value="public">전체 공개</option><option value="member">회원 전용</option></select></label>
+    <label>상태<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>모집 중</option><option>진행 중</option><option>완료</option></select></label>
     <label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
     <label className="wide upload-label"><Upload/>홍보 포스터 (선택, 5MB 이하)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setPoster(e.target.files[0]||null)}/><span>{poster?.name||(editing?.poster_path?'기존 포스터 유지 (새 이미지를 선택하면 교체)':'이미지를 선택해주세요')}</span></label>
     <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':'활동 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
@@ -92,9 +125,13 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
       <div><b>{item.title}</b><span>{item.activity_type} · 참여 {item.activity_members?.length||0}명{item.apply_end?` · 마감 ${item.apply_end}`:''}</span></div>
       <select value={item.status} onChange={e=>setStatus(item,e.target.value)}><option>모집 중</option><option>진행 중</option><option>완료</option></select>
       <button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button>
-      <button onClick={()=>{setMemberEdit(memberEdit===item.id?null:item.id);setPick('')}} title="참여자 관리" aria-label="참여자 관리"><UserPlus/></button>
+      <button onClick={()=>setPhotoEdit(photoEdit===item.id?null:item.id)} title="활동 사진" aria-label="활동 사진"><ImageIcon/></button><button onClick={()=>{setMemberEdit(memberEdit===item.id?null:item.id);setPick('')}} title="참여자 관리" aria-label="참여자 관리"><UserPlus/></button>
       <button onClick={()=>remove(item)}><Trash2/></button>
     </div>
+    {photoEdit===item.id&&<div className="member-editor">
+      <div className="photo-grid">{item.photos?.length?item.photos.map(ph=><div className="photo-thumb" key={ph.id}><img src={ph.url} alt=""/><button onClick={()=>removePhoto(ph)} aria-label="사진 삭제"><X size={13}/></button></div>):<span className="chips-label">등록된 사진이 없습니다</span>}</div>
+      <label className="button secondary photo-add">{photoBusy?'업로드 중...':'사진 추가 (여러 장 가능)'}<input type="file" accept="image/*" multiple disabled={photoBusy} onChange={e=>{addPhotos(item,[...e.target.files]);e.target.value=''}} style={{display:'none'}}/></label>
+    </div>}
     {memberEdit===item.id&&<div className="member-editor">
       <div className="member-chips">{item.activity_members?.length?item.activity_members.map(m=><span className="member-chip" key={m.id}>{m.member_name}<button onClick={()=>removeMember(m)} aria-label={`${m.member_name} 제외`}><X size={12}/></button></span>):<span className="chips-label">아직 참여자가 없습니다</span>}</div>
       <div className="member-picker">

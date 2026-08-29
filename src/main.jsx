@@ -49,7 +49,7 @@ function App(){
         supabase.from('documents').select('*').order('created_at',{ascending:false}),
         supabase.from('public_member_summary').select('*').eq('id',1).maybeSingle(),
         supabase.from('mileage_items').select('*').order('base_score',{ascending:false}),
-        supabase.from('activities').select('*, activity_members(id,member_name,student_id,member_role)').order('created_at',{ascending:false})
+        supabase.from('activities').select('*, activity_members(id,member_name,student_id,member_role), activity_photos(id,photo_path)').order('created_at',{ascending:false})
       ]);
       setNewsletters((news||[]).map(item=>({...item,file_url:supabase.storage.from('newsletters').getPublicUrl(item.file_path).data.publicUrl})));
       setEvents(eventRows||[]);
@@ -57,7 +57,7 @@ function App(){
       setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
       setMemberSummary(summaryRow||null);
       setMileageItems(itemRows||[]);
-      setActivities((activityRows||[]).map(item=>({...item,poster_url:item.poster_path?supabase.storage.from('posters').getPublicUrl(item.poster_path).data.publicUrl:null})));
+      setActivities((activityRows||[]).map(item=>({...item,poster_url:item.poster_path?supabase.storage.from('posters').getPublicUrl(item.poster_path).data.publicUrl:null,photos:(item.activity_photos||[]).map(ph=>({...ph,url:supabase.storage.from('posters').getPublicUrl(ph.photo_path).data.publicUrl}))})));
       if(currentUser){
         const [{data:p},{data:stats},{data:history}]=await Promise.all([
           supabase.from('profiles').select('*').eq('id',currentUser.id).maybeSingle(),
