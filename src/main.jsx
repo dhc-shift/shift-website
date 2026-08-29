@@ -1,211 +1,122 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import {
-  ArrowRight, Bell, BookOpen, CalendarDays, Check, ChevronDown, ChevronLeft,
-  ChevronRight, CircleUserRound, Clock3, Download, ExternalLink, FileText,
-  FolderArchive, GraduationCap, HeartHandshake, Lightbulb, Mail, MapPin,
-  LogIn, LogOut, Menu, MessageSquareText, Phone, Plus, Send, Settings, Sparkles,
-  Trash2, Trophy, Upload, Users, X
-} from 'lucide-react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import './styles.css';
-import { isSupabaseConfigured, supabase } from './supabase';
+import { isSupabaseConfigured, supabase } from './supabase.js';
+import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
+import Home from './pages/Home.jsx';
+import About from './pages/About.jsx';
+import Activities from './pages/Activities.jsx';
+import Archive from './pages/Archive.jsx';
+import Board from './pages/Board.jsx';
+import More from './pages/More.jsx';
+import Contact from './pages/Contact.jsx';
+import MyPage from './pages/MyPage.jsx';
+import LoginPage, { UpdatePasswordPage } from './pages/LoginPage.jsx';
+import AdminPage from './pages/Admin.jsx';
 
-const navItems = [
-  ['home', '홈'], ['about', '소개'], ['activities', '활동'], ['archive', '아카이브'],
-  ['board', '게시판'], ['more', '더보기'], ['contact', '컨택']
-];
+function App(){
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [user,setUser]=useState(null);
+  const [profile,setProfile]=useState(null);
+  const [newsletters,setNewsletters]=useState([]);
+  const [events,setEvents]=useState([]);
+  const [members,setMembers]=useState([]);
+  const [notices,setNotices]=useState([]);
+  const [documents,setDocuments]=useState([]);
+  const [suggestions,setSuggestions]=useState([]);
+  const [memberSummary,setMemberSummary]=useState(null);
+  const [memberStats,setMemberStats]=useState(null);
+  const [mileageHistory,setMileageHistory]=useState([]);
+  const [mileageItems,setMileageItems]=useState([]);
+  const [loading,setLoading]=useState(isSupabaseConfigured);
+  const [loadError,setLoadError]=useState(false);
 
-const activityData = [
-  { id: 1, type: '프로젝트', title: '헬스케어 데이터랩', desc: '건강 데이터를 더 유용하게 만드는 서비스 개발', period: '08.20 — 09.08', capacity: '12명', dday: 'D-6', access: 'public', color: 'blue' },
-  { id: 2, type: '스터디', title: 'AWS 클라우드 3기', desc: '클라우드 인프라의 기초부터 배포까지', period: '08.24 — 09.12', capacity: '16명', dday: 'D-10', access: 'member', color: 'mint' },
-  { id: 3, type: '세미나', title: 'AI Product Night', desc: '실무자가 들려주는 AI 프로덕트 이야기', period: '09.01 — 09.18', capacity: '40명', dday: 'D-16', access: 'public', color: 'purple' },
-  { id: 4, type: '행사', title: 'SHIFT 네트워킹 데이', desc: '선배와 후배가 연결되는 커뮤니티 데이', period: '09.05 — 09.20', capacity: '60명', dday: 'D-18', access: 'member', color: 'yellow' }
-];
+  // 기존 컴포넌트들이 쓰던 setPage(id) 인터페이스를 라우터 이동으로 연결
+  const setPage = id => navigate(id === 'home' ? '/' : `/${id}`);
+  const page = location.pathname === '/' ? 'home' : location.pathname.slice(1);
 
-const archives = [
-  { type: '프로젝트', title: 'CareLink', period: '2026.03 — 2026.07', desc: '보호자와 가족을 잇는 디지털 헬스케어 서비스', art: 'art-care' },
-  { type: '스터디', title: 'AWS 스터디 2기', period: '2026.03 — 2026.06', desc: '함께 배우고 직접 배포하며 익힌 클라우드', art: 'art-cloud' },
-  { type: '세미나', title: '데이터 분석 세미나', period: '2026.05.18', desc: '데이터로 문제를 정의하는 실전 세션', art: 'art-data' },
-  { type: '행사', title: '2026 SHIFT OT', period: '2026.03.08', desc: '새로운 시작을 함께한 첫 번째 만남', art: 'art-people' },
-  { type: '프로젝트', title: 'Medi Note', period: '2025.09 — 2026.01', desc: '진료 기록을 쉽고 안전하게 정리하는 경험', art: 'art-note' },
-  { type: '행사', title: 'Homecoming Day', period: '2025.11.22', desc: 'SHIFT의 선후배가 한자리에 모인 밤', art: 'art-event' }
-];
+  const loadData=async(currentUser=user)=>{
+    if(!supabase)return;
+    try{
+      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows}]=await Promise.all([
+        supabase.from('newsletters').select('*').order('published_at',{ascending:false}),
+        supabase.from('calendar_events').select('*').order('event_date'),
+        supabase.from('notices').select('*').order('is_pinned',{ascending:false}).order('published_at',{ascending:false}),
+        supabase.from('documents').select('*').order('created_at',{ascending:false}),
+        supabase.from('public_member_summary').select('*').eq('id',1).maybeSingle(),
+        supabase.from('mileage_items').select('*').order('base_score',{ascending:false})
+      ]);
+      setNewsletters((news||[]).map(item=>({...item,file_url:supabase.storage.from('newsletters').getPublicUrl(item.file_path).data.publicUrl})));
+      setEvents(eventRows||[]);
+      setNotices(noticeRows||[]);
+      setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
+      setMemberSummary(summaryRow||null);
+      setMileageItems(itemRows||[]);
+      if(currentUser){
+        const [{data:p},{data:stats},{data:history}]=await Promise.all([
+          supabase.from('profiles').select('*').eq('id',currentUser.id).maybeSingle(),
+          supabase.from('member_stats').select('*').ilike('email',currentUser.email).maybeSingle(),
+          supabase.from('mileage_history').select('*').order('activity_date',{ascending:false})
+        ]);
+        setProfile(p);
+        setMemberStats(stats||null);
+        setMileageHistory(history||[]);
+        if(p?.role==='admin'){
+          const [{data:m},{data:s}]=await Promise.all([
+            supabase.from('profiles').select('*').order('created_at'),
+            supabase.from('suggestions').select('*, profiles(name,email)').order('created_at',{ascending:false})
+          ]);
+          setMembers(m||[]);
+          setSuggestions(s||[]);
+        }
+      }else{
+        setProfile(null);setMemberStats(null);setMileageHistory([]);setMembers([]);setSuggestions([]);
+      }
+      setLoadError(false);
+    }catch(err){
+      console.error('데이터 로딩 실패:', err);
+      setLoadError(true);
+    }finally{
+      setLoading(false);
+    }
+  };
 
-// 캘린더 일정 Mock Data입니다. 실제 서비스에서는 이 배열을 DB/API 응답으로 교체합니다.
-const calendarSchedules = {
-  1: [
-    { time: '17:00', title: 'SHIFT 개강총회', place: '컨버전스 홀', tone: 'blue' },
-    { time: '18:00', title: '디헬 학생회 [태양] 개강총회', place: '미래관 437', tone: 'purple' }
-  ],
-  16: [{ time: '19:00', title: 'SHIFT 정기회의', place: '미래관 139', tone: 'blue' }],
-  14: [
-    { time: '13:00', title: 'CareLink 사용자 인터뷰', place: '프로젝트룸 B', tone: 'blue' },
-    { time: '18:30', title: '프로젝트 전체 회고', place: 'SHIFT 동아리실', tone: 'blue' }
-  ],
-  18: [{ time: '18:00', title: 'SHIFT 네트워킹 데이', place: '학생회관 라운지', tone: 'lime' }],
-  22: [{ time: '15:00', title: '클라우드 배포 워크숍', place: '컴퓨터실 302호', tone: 'mint' }],
-  26: [{ time: '17:00', title: '데이터 분석 세미나', place: 'IT관 101호', tone: 'purple' }]
-};
+  useEffect(()=>{
+    if(!isSupabaseConfigured)return;
+    supabase.auth.getSession().then(({data})=>{const u=data.session?.user||null;setUser(u);loadData(u)});
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{const u=session?.user||null;setUser(u);if(event==='PASSWORD_RECOVERY')navigate('/reset');setTimeout(()=>loadData(u),0)});
+    return()=>subscription.unsubscribe();
+  },[]);
 
-function Logo({ onClick }) {
-  return <button className="logo" onClick={onClick} aria-label="SHIFT 홈"><img src="/shift-header-logo.png" alt="SHIFT" /></button>;
-}
+  useEffect(()=>{ window.scrollTo({ top: 0 }); },[location.pathname]);
 
-function Header({ page, setPage, user, profile, signOut }) {
-  const [open, setOpen] = useState(false);
-  const move = p => { setPage(p); setOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  return <header className="header">
-    <div className="nav-shell">
-      <Logo onClick={() => move('home')} />
-      <nav className={open ? 'nav-menu open' : 'nav-menu'}>
-        {navItems.map(([id, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => move(id)}>{label}</button>)}
-      </nav>
-      <div className="header-actions">
-        {profile?.role === 'admin' && <button className="admin-shortcut" onClick={() => move('admin')}><Settings/><span>관리</span></button>}
-        <button className="profile-button" onClick={() => move(user ? 'mypage' : 'login')} aria-label={user ? '마이페이지' : '로그인'}>
-          <span className="avatar-mini">{user ? (profile?.name?.[0] || 'S') : <LogIn/>}</span><span>{user ? '마이페이지' : '로그인'}</span>
-        </button>
-        {user && <button className="logout-button" onClick={signOut} aria-label="로그아웃"><LogOut/></button>}
-        <button className="mobile-menu" onClick={() => setOpen(!open)} aria-label="메뉴">{open ? <X /> : <Menu />}</button>
-      </div>
-    </div>
-  </header>;
-}
+  const signOut=async()=>{await supabase.auth.signOut();setUser(null);setProfile(null);navigate('/')};
 
-function Badge({ children, tone = 'blue' }) { return <span className={`badge ${tone}`}>{children}</span>; }
-function SectionHead({ eyebrow, title, text, action }) { return <div className="section-head"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2>{text && <p>{text}</p>}</div>{action}</div>; }
-function Button({ children, secondary = false, onClick }) { return <button className={secondary ? 'button secondary' : 'button'} onClick={onClick}>{children}</button>; }
-function PageHero({ eyebrow, title, description }) { return <section className="page-hero"><div className="orb orb-a" /><div className="orb orb-b" /><div className="container"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div></section>; }
-
-function Home({ setPage }) {
-  const slides = [
-    { eyebrow: '2026 SECOND HALF', title: <>새로운 가능성은<br/><em>함께할 때 시작돼요</em></>, text: 'SHIFT 2기 신입부원을 모집합니다.', cta: '모집 자세히 보기', art: 'cube' },
-    { eyebrow: 'BUILD WITH SHIFT', title: <>아이디어를 세상에<br/><em>실행으로 옮겨보세요</em></>, text: '2026 신규 프로젝트 팀 빌딩이 시작됩니다.', cta: '프로젝트 둘러보기', art: 'rings' },
-    { eyebrow: 'SHIFT CONNECT', title: <>배움과 경험이 만나는<br/><em>커뮤니티의 하루</em></>, text: '9월, SHIFT 네트워킹 데이에 초대합니다.', cta: '행사 확인하기', art: 'network' }
-  ];
-  const [slide, setSlide] = useState(0);
-  useEffect(() => { const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5500); return () => clearInterval(t); }, []);
-  const s = slides[slide];
   return <>
-    <section className="hero container">
-      <div className="hero-panel">
-        <div className="hero-copy"><span className="eyebrow">{s.eyebrow}</span><h1>{s.title}</h1><p>{s.text}</p><Button onClick={() => setPage(slide === 1 ? 'activities' : slide === 2 ? 'activities' : 'more')}>{s.cta}<ArrowRight size={17}/></Button></div>
-        <HeroArt variant={s.art}/>
-        <button className="slider-arrow left" onClick={() => setSlide((slide + slides.length - 1) % slides.length)}><ChevronLeft/></button>
-        <button className="slider-arrow right" onClick={() => setSlide((slide + 1) % slides.length)}><ChevronRight/></button>
-        <div className="slider-dots">{slides.map((_, i) => <button key={i} className={i === slide ? 'on' : ''} onClick={() => setSlide(i)}/>)}</div>
-      </div>
-    </section>
-    <section className="section container">
-      <SectionHead eyebrow="NOW OPEN" title="지금, 함께할 수 있는 활동" text="관심 있는 활동을 발견하고 새로운 동료를 만나보세요." action={<button className="text-link" onClick={() => setPage('activities')}>전체 보기 <ArrowRight size={15}/></button>}/>
-      <div className="activity-grid">{activityData.map(a => <ActivityCard key={a.id} item={a} onClick={() => setPage('activities')}/>)}</div>
-    </section>
-    <section className="section notices-section"><div className="container">
-      <SectionHead eyebrow="NOTICE" title="SHIFT의 새로운 소식" action={<button className="text-link" onClick={() => setPage('board')}>전체 보기 <ArrowRight size={15}/></button>}/>
-      <div className="notice-list">
-        {[['필독','2026 하반기 신입부원 최종 합격자 안내','2026.08.26'],['공지','프로젝트 팀 빌딩 및 OT 안내','2026.08.22'],['뉴스','SHIFT Letter Vol.18 — 우리가 만든 변화','2026.08.18'],['공지','동아리실 이용 수칙 개정 안내','2026.08.12']].map((n,i)=><button key={i}><Badge tone={i===0?'blue':'gray'}>{n[0]}</Badge><strong>{n[1]}</strong><time>{n[2]}</time><ChevronRight size={17}/></button>)}
-      </div>
-    </div></section>
+    <Header page={page} setPage={setPage} user={user} profile={profile} signOut={signOut}/>
+    {loadError&&<div className="admin-notice container" role="alert">데이터를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 새로고침해주세요.</div>}
+    <main>
+      {loading?<div className="board-empty" style={{minHeight:'50vh',justifyContent:'center'}}><p>불러오는 중...</p></div>:
+      <Routes>
+        <Route path="/" element={<Home setPage={setPage} notices={notices}/>}/>
+        <Route path="/about" element={<About summary={memberSummary}/>}/>
+        <Route path="/activities" element={<Activities calendarEvents={events} user={user}/>}/>
+        <Route path="/archive" element={<Archive/>}/>
+        <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
+        <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>
+        <Route path="/contact" element={<Contact/>}/>
+        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
+        <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
+        <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>
+        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} refresh={()=>loadData(user)}/>}/>
+        <Route path="*" element={<Navigate to="/" replace/>}/>
+      </Routes>}
+    </main>
+    <Footer setPage={setPage}/>
   </>;
 }
 
-function HeroArt({ variant }) { return <div className={`hero-art ${variant}`}><div className="glow"/><div className="shape shape-1"/><div className="shape shape-2"/><div className="shape shape-3"/><div className="orbit"><Sparkles size={22}/></div></div>; }
-function ActivityCard({ item, onClick }) { return <button className="activity-card" onClick={onClick}><div className={`activity-icon ${item.color}`}><ActivityIcon type={item.type}/></div><div className="activity-top"><Badge tone={item.color}>{item.type}</Badge><strong className="dday">{item.dday}</strong></div><h3>{item.title}</h3><p>{item.desc}</p><div className="card-meta"><CalendarDays size={15}/>{item.period}</div></button>; }
-function ActivityIcon({ type }) { return type === '프로젝트' ? <Lightbulb/> : type === '스터디' ? <BookOpen/> : type === '세미나' ? <GraduationCap/> : <Users/>; }
-
-function About({ summary }) { return <>
-  <PageHero eyebrow="WHO WE ARE" title={<>아이디어를 움직이는 사람들,<br/><em>우리는 SHIFT입니다.</em></>} description="IT와 디지털 헬스케어를 중심으로 배우고, 연결하고, 세상에 필요한 변화를 만듭니다."/>
-  <section className="section container about-intro"><div><SectionHead eyebrow="ABOUT SHIFT" title="배움에서 멈추지 않고, 함께 실행합니다."/><p className="body-copy">SHIFT는 전공과 학년의 경계를 넘어 기술로 더 나은 일상을 고민하는 대학생 IT 동아리입니다. 스터디에서 쌓은 지식을 프로젝트로 확장하고, 세미나와 커뮤니티 활동을 통해 서로의 성장을 연결합니다.</p><div className="stats"><div><b>1</b><span>함께한 기수</span></div><div><b>{summary?.member_count ?? 41}</b><span>누적 멤버</span></div><div><b>4</b><span>완료 프로젝트</span></div></div></div><div className="brand-graphic"><div className="brand-ring one"/><div className="brand-ring two"/><strong>SHIFT</strong><span className="brand-dot d1"/><span className="brand-dot d2"/><span className="brand-dot d3"/><img src="/shift-about-logo.png" alt="SHIFT 로고" onError={event => event.currentTarget.classList.add('image-missing')}/></div></section>
-  <section className="section soft-section"><div className="container"><SectionHead eyebrow="ORGANIZATION" title="각자의 전문성으로, 하나의 방향을 만듭니다." text="SHIFT는 두 본부가 유기적으로 협업하며 운영됩니다."/><OrgChart/></div></section>
-  </>;
-}
-function OrgChart(){return <div className="org-chart"><div className="org-node chief"><span>LEADER</span><b>회장</b><small>유민준</small></div><div className="org-line vertical"/><div className="org-node vice"><span>VICE LEADER</span><b>부회장</b><small>최유진</small></div><div className="org-branches"><div className="org-branch"><div className="org-node division blue"><Lightbulb/><b>학술기획 본부</b><small>프로젝트 기획 · 운영 · 실행</small></div><div className="member-row">{['김대희','김지원'].map(x=><div className="member" key={x}><CircleUserRound/><span>{x}</span></div>)}</div></div><div className="org-branch"><div className="org-node division mint"><HeartHandshake/><b>인사시스템 본부</b><small>인사관리 · 뉴스레터</small></div><div className="member-row">{['김남훈','김시연','이남주'].map(x=><div className="member" key={x}><CircleUserRound/><span>{x}</span></div>)}</div></div></div></div>}
-
-function Activities({ calendarEvents = [] }) {
-  const [selected, setSelected] = useState(activityData[0]);
-  const [monthOffset, setMonthOffset] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(3);
-  const isMember = true; // 실제 인증 정보로 대체: 비회원이면 public 활동만 노출
-  const visible = activityData.filter(a => a.access === 'public' || isMember);
-  const viewDate = new Date(2026, 8 + monthOffset, 1);
-  const viewYear = viewDate.getFullYear();
-  const viewMonth = viewDate.getMonth();
-  const monthName = viewDate.toLocaleDateString('ko-KR',{year:'numeric',month:'long'});
-  const selectedDate = new Date(viewYear, viewMonth, selectedDay);
-  const dbSchedules = calendarEvents.filter(event => {
-    const start = new Date(`${event.event_date}T00:00:00`);
-    const end = new Date(`${event.end_date || event.event_date}T23:59:59`);
-    return selectedDate >= start && selectedDate <= end;
-  }).map(event => ({ time: event.start_time?.slice(0,5), title: event.title, place: event.place, tone: eventTone(event.event_type) }));
-  const selectedSchedules = dbSchedules.length ? dbSchedules : (monthOffset === 0 ? (calendarSchedules[selectedDay] || []) : []);
-  const monthStart = new Date(viewYear,viewMonth,1);
-  const monthEnd = new Date(viewYear,viewMonth+1,0,23,59,59);
-  const monthEvents = calendarEvents.filter(event => new Date(`${event.event_date}T00:00:00`) <= monthEnd && new Date(`${event.end_date || event.event_date}T23:59:59`) >= monthStart);
-  const changeMonth = direction => { setMonthOffset(monthOffset + direction); setSelectedDay(1); };
-  return <><PageHero eyebrow="ACTIVITIES" title={<>함께 배우고,<br/><em>경험을 확장하세요.</em></>} description="SHIFT의 모든 활동과 모집 일정을 한눈에 확인하세요."/>
-  <section className="section container activities-layout">
-    <div className="calendar-card"><div className="calendar-head"><div><span className="eyebrow">SHIFT CALENDAR</span><h2>{monthName}</h2></div><div><button onClick={()=>changeMonth(-1)} aria-label="이전 달"><ChevronLeft/></button><button onClick={()=>changeMonth(1)} aria-label="다음 달"><ChevronRight/></button></div></div><Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} showEvents={monthOffset === 0} dbEvents={monthEvents} year={viewYear} month={viewMonth}/><div className="legend"><span><i className="blue"/>프로젝트</span><span><i className="mint"/>스터디</span><span><i className="purple"/>세미나</span><span><i className="lime"/>행사</span></div></div>
-    <div className="recruit-panel"><SectionHead eyebrow="RECRUITING" title="모집 중인 활동"/><div className="recruit-list">{visible.map(a=><button key={a.id} className={selected.id===a.id?'selected':''} onClick={()=>setSelected(a)}><div className={`mini-icon ${a.color}`}><ActivityIcon type={a.type}/></div><div><Badge tone={a.color}>{a.type}</Badge><h3>{a.title}</h3><span>{a.period} · {a.capacity}</span></div><strong>{a.dday}</strong></button>)}</div></div>
-    <div className="today-card"><SectionHead eyebrow={`${monthName} ${selectedDay}일`} title={selectedDay === 3 && monthOffset === 0 ? '오늘 일정' : '선택한 날짜의 일정'}/><div className="timeline">{selectedSchedules.length > 0 ? selectedSchedules.map(x=><div className="timeline-item" key={`${x.time}-${x.title}`}><time>{x.time}</time><i className={x.tone}/><div><b>{x.title}</b><span>{x.place}</span></div></div>) : <div className="empty-schedule"><CalendarDays/><b>등록된 일정이 없어요</b><span>다른 날짜를 선택해 일정을 확인해보세요.</span></div>}</div></div>
-    <div className="detail-card"><div className="detail-top"><div><Badge tone={selected.color}>{selected.type}</Badge><h2>{selected.title}</h2><p>{selected.desc}</p></div><strong>{selected.dday}</strong></div><div className="detail-info">{[[Users,'대상','SHIFT 회원 및 대학생'],[CalendarDays,'일정','2026.09.22 — 2026.11.28'],[MapPin,'장소','SHIFT 프로젝트룸 / 온라인'],[Users,'모집 인원',selected.capacity],[Clock3,'신청 기간',selected.period]].map(([I,k,v])=><div key={k}><I/><span>{k}</span><b>{v}</b></div>)}</div><Button>이 활동에 신청하기 <ArrowRight size={17}/></Button></div>
-  </section></>;
-}
-const eventTone = type => ({프로젝트:'blue',스터디:'mint',세미나:'purple',행사:'lime'}[type] || 'blue');
-function Calendar({selectedDay,onSelectDay,showEvents,dbEvents=[],year,month}){const firstDay=new Date(year,month,1).getDay();const daysInMonth=new Date(year,month+1,0).getDate();const prevMonthDays=new Date(year,month,0).getDate();const cells=Array.from({length:42},(_,i)=>i<firstDay?{day:prevMonthDays-firstDay+i+1,current:false}:i>=firstDay+daysInMonth?{day:i-firstDay-daysInMonth+1,current:false}:{day:i-firstDay+1,current:true});const eventTones=showEvents?Object.fromEntries(Object.entries(calendarSchedules).map(([day,items])=>[day,items[0].tone])):{};dbEvents.forEach(event=>{const start=new Date(`${event.event_date}T00:00:00`);const end=new Date(`${event.end_date||event.event_date}T00:00:00`);const visibleStart=new Date(Math.max(start,new Date(year,month,1)));const visibleEnd=new Date(Math.min(end,new Date(year,month+1,0)));for(let date=new Date(visibleStart);date<=visibleEnd;date.setDate(date.getDate()+1))eventTones[date.getDate()]=eventTone(event.event_type)});const today=new Date();return <div className="calendar"><div className="weekdays">{['일','월','화','수','목','금','토'].map(d=><span key={d}>{d}</span>)}</div><div className="days">{cells.map((cell,i)=><button key={i} disabled={!cell.current} onClick={()=>cell.current&&onSelectDay(cell.day)} className={`${cell.current?'':'muted'} ${cell.current&&cell.day===selectedDay?'selected-day':''} ${cell.current&&cell.day===today.getDate()&&month===today.getMonth()&&year===today.getFullYear()?'actual-today':''}`} aria-label={cell.current?`${cell.day}일 일정 보기`:undefined}><span>{cell.day}</span>{eventTones[cell.day]&&cell.current?<i className={eventTones[cell.day]}/>:null}</button>)}</div></div>}
-
-function Archive() { const [filter,setFilter]=useState('전체'); const [selected,setSelected]=useState(null); const list=filter==='전체'?archives:archives.filter(a=>a.type===filter); return <><PageHero eyebrow="ARCHIVE" title={<>우리가 함께 만든<br/><em>시간과 결과.</em></>} description="SHIFT의 도전과 성장의 순간을 기록합니다."/><section className="section container"><div className="filter-row">{['전체','프로젝트','스터디','세미나','행사'].map(f=><button className={filter===f?'active':''} onClick={()=>setFilter(f)} key={f}>{f}</button>)}</div><div className="archive-grid">{list.map((a,i)=><button className="archive-card" onClick={()=>setSelected(a)} key={a.title}><div className={`archive-art ${a.art}`}><div className="fake-window"><i/><i/><i/></div><span>{String(i+1).padStart(2,'0')}</span></div><div className="archive-copy"><div><Badge tone={a.type==='프로젝트'?'blue':a.type==='스터디'?'mint':a.type==='세미나'?'purple':'yellow'}>{a.type}</Badge><time>{a.period}</time></div><h3>{a.title}</h3><p>{a.desc}</p><span className="text-link">기록 보기 <ArrowRight size={15}/></span></div></button>)}</div></section>{selected&&<ArchiveModal item={selected} close={()=>setSelected(null)}/>}</> }
-function ArchiveModal({item,close}){return <div className="modal-backdrop" onClick={close}><div className="modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={close}><X/></button><div className={`modal-visual ${item.art}`}><Badge>{item.type}</Badge><h2>{item.title}</h2><p>{item.period}</p></div><div className="modal-body"><h3>프로그램 소개</h3><p>{item.desc}. 구성원들이 함께 문제를 발견하고, 작은 실험을 반복하며 의미 있는 결과를 만들어낸 활동입니다.</p><h3>활동 결과</h3><div className="result-box"><Check/><span>최종 결과물 발표와 회고 완료</span></div><h3>활동 사진</h3><div className="gallery"><i/><i/><i/></div></div></div></div>}
-
-function Board({newsletters,notices,documents,user}){const [cat,setCat]=useState('공지사항');const cats=[['공지사항',Bell],['뉴스레터',Mail],['건의함',MessageSquareText],['자료실',FolderArchive]];return <><PageHero eyebrow="BOARD" title={<>SHIFT의 공식 소식과<br/><em>정보를 확인하세요.</em></>} description="공지부터 운영 문서까지, 필요한 정보를 투명하게 공유합니다."/><section className="section container board-layout"><aside className="board-side"><span className="eyebrow">CATEGORY</span>{cats.map(([c,I])=><button className={cat===c?'active':''} onClick={()=>setCat(c)} key={c}><I/>{c}<ChevronRight/></button>)}</aside><div className="board-content"><SectionHead eyebrow="BOARD" title={cat} text={boardDescriptions[cat]}/><BoardView category={cat} newsletters={newsletters} notices={notices} documents={documents} user={user}/></div></section></>}
-const boardDescriptions={공지사항:'SHIFT 운영과 활동에 관한 중요한 안내입니다.',뉴스레터:'우리가 만든 변화와 동료들의 이야기를 전합니다.',건의함:'더 나은 SHIFT를 위한 의견을 들려주세요.',자료실:'동아리 규칙을 포함한 공식 문서와 자료를 확인하세요.'};
-function BoardView({category,newsletters=[],notices=[],documents=[],user}){if(category==='공지사항')return notices.length?<div className="table-wrap"><div className="board-table notice-table table-head"><span>구분</span><span>제목</span><span>작성자</span><span>날짜</span></div>{notices.map(item=><details className="notice-detail" key={item.id}><summary className="board-table notice-table"><span>{item.is_pinned?'필독':item.id}</span><strong>{item.title}</strong><span>{item.author_name}</span><span>{item.published_at}</span></summary><div className="notice-content">{item.content}</div></details>)}</div>:<div className="board-empty"><Bell/><h3>등록된 공지사항이 없습니다</h3><p>새로운 소식이 등록되면 이곳에 표시됩니다.</p></div>;
-if(category==='뉴스레터')return newsletters.length ? <div className="newsletter-grid">{newsletters.map(item=><a href={item.file_url} target="_blank" rel="noreferrer" key={item.id}><span>SHIFT LETTER · {new Date(item.published_at).toLocaleDateString('ko-KR',{year:'numeric',month:'long'})}</span><h3>{item.title}</h3><p>{item.description || 'SHIFT의 새로운 소식과 활동 이야기를 만나보세요.'}</p><ArrowRight/></a>)}</div> : <div className="board-empty"><Mail/><h3>등록된 뉴스레터가 없습니다</h3><p>관리자 페이지에서 첫 뉴스레터를 등록해주세요.</p></div>;
-if(category==='건의함')return <SuggestionForm user={user}/>;
-return documents.length?<div className="files">{documents.map(item=><a href={item.file_url} target="_blank" rel="noreferrer" key={item.id}><FileText/><div><b>{item.title}</b><span>{item.category} · {item.description||'공식 자료'}</span></div><Download/></a>)}</div>:<div className="board-empty"><FolderArchive/><h3>등록된 자료가 없습니다</h3><p>동아리 규칙과 공식 문서가 이곳에 게시됩니다.</p></div>}
-
-function SuggestionForm({user}){const [form,setForm]=useState({suggestion_type:'프로그램 제안',content:'',is_anonymous:true});const [message,setMessage]=useState('');if(!user)return <div className="board-empty"><LogIn/><h3>로그인이 필요합니다</h3><p>SHIFT 회원 로그인 후 건의를 제출할 수 있습니다.</p></div>;const submit=async e=>{e.preventDefault();setMessage('');const {error}=await supabase.from('suggestions').insert({...form,author_id:user.id});if(error)setMessage(error.message);else{setForm({...form,content:''});setMessage('건의가 안전하게 접수되었습니다. 관리자만 내용을 확인할 수 있습니다.')}};return <form className="suggest-form" onSubmit={submit}><label>건의 유형<select value={form.suggestion_type} onChange={e=>setForm({...form,suggestion_type:e.target.value})}>{['프로그램 제안','운영 개선','복지','홈페이지','기타'].map(x=><option key={x}>{x}</option>)}</select></label><fieldset><legend>제출 방식</legend><label><input type="radio" name="identity" checked={form.is_anonymous} onChange={()=>setForm({...form,is_anonymous:true})}/> 익명</label><label><input type="radio" name="identity" checked={!form.is_anonymous} onChange={()=>setForm({...form,is_anonymous:false})}/> 기명</label></fieldset><label>의견<textarea required value={form.content} onChange={e=>setForm({...form,content:e.target.value})} placeholder="SHIFT에 전하고 싶은 의견을 자유롭게 작성해주세요." rows="7"/></label>{message&&<div className="auth-message">{message}</div>}<Button>의견 보내기 <Send size={16}/></Button></form>}
-
-function More({setPage}) { const [detail,setDetail]=useState(null); if(detail==='mileage')return <Mileage back={()=>setDetail(null)}/>; if(detail==='recruit')return <Recruit back={()=>setDetail(null)}/>; return <><PageHero eyebrow="MORE" title={<>SHIFT를 더 깊이<br/><em>경험하는 방법.</em></>} description="꾸준한 활동을 기록하고, 새로운 동료로 합류하세요."/><section className="section container more-grid"><button className="feature-card mileage" onClick={()=>setDetail('mileage')}><div><span className="eyebrow">MILEAGE</span><h2>성장의 모든 순간을<br/>차곡차곡 기록해요.</h2><p>SHIFT 활동으로 마일리지를 쌓고 특별한 혜택을 만나보세요.</p><span className="button secondary">마일리지 확인하기 <ArrowRight size={16}/></span></div><CoinArt/></button><button className="feature-card recruit" onClick={()=>setDetail('recruit')}><div><span className="eyebrow">JOIN SHIFT</span><h2>다음 변화의 시작,<br/>당신을 기다려요.</h2><p>아이디어를 함께 현실로 옮길 2기 신입부원을 모집합니다.</p><span className="button secondary">모집 안내 보기 <ArrowRight size={16}/></span></div><PeopleArt/></button></section></> }
-function CoinArt(){return <div className="coin-art"><i/><i/><b>P</b><span>+120</span></div>}function PeopleArt(){return <div className="people-art"><Users/><i/><i/><span>+</span></div>}
-function SubHeader({title,back}){return <div className="sub-header container"><button onClick={back}><ChevronLeft/> 더보기</button><h1>{title}</h1></div>}
-function Mileage({back}){return <><SubHeader title="마일리지" back={back}/><section className="section container"><div className="mileage-summary"><div><span>나의 마일리지</span><strong>1,250<small>P</small></strong><p>이번 달 <b>+180P</b>를 적립했어요</p></div><div><span>현재 등급</span><strong className="rank">SILVER</strong><div className="progress"><i/></div><p>GOLD까지 <b>250P</b> 남았어요</p></div><CoinArt/></div><div className="mileage-columns"><div className="panel"><SectionHead eyebrow="HISTORY" title="적립 · 차감 내역"/>{[['08.26','세미나 발표','+80P'],['08.18','프로젝트 중간 발표','+120P'],['08.03','동아리실 대여','-30P'],['07.28','정기 모임 출석','+20P']].map(x=><div className="history" key={x[0]}><time>{x[0]}</time><b>{x[1]}</b><strong className={x[2][0]==='-'?'minus':''}>{x[2]}</strong></div>)}</div><div className="panel"><SectionHead eyebrow="LEADERBOARD" title="마일리지 TOP 3"/><div className="tabs-inline"><button className="active">누적</button><button>이번 달</button></div>{[['🥇','한예린','2,840P'],['🥈','윤도현','2,560P'],['🥉','박지안','2,310P']].map(x=><div className="ranking" key={x[1]}><span>{x[0]}</span><b>{x[1]}</b><strong>{x[2]}</strong></div>)}</div></div><div className="panel criteria"><SectionHead eyebrow="POINT GUIDE" title="활동별 지급 기준"/><div className="criteria-grid">{[['정기 모임 출석','+20P'],['스터디 수료','+150P'],['프로젝트 완주','+300P'],['세미나 발표','+80P']].map(x=><div><Check/><span>{x[0]}</span><b>{x[1]}</b></div>)}</div></div></section></>}
-function Recruit({back}){return <><SubHeader title="신입부원 모집" back={back}/><section className="section container recruit-page"><div className="recruit-hero"><span className="eyebrow">SHIFT 2TH RECRUITING</span><h2>당신의 아이디어가<br/><em>세상을 움직이는 순간.</em></h2><p>SHIFT와 함께 배우고 만들며 성장할 2기 동료를 기다립니다.</p><Button>지원서 작성하기 <ExternalLink size={16}/></Button><PeopleArt/></div><div className="recruit-info">{[['모집 기간','2026.08.24 — 09.13'],['모집 대상','IT와 디지털 헬스케어에 관심 있는 대학생'],['지원 방법','온라인 지원서 제출 → 인터뷰 → 최종 발표']].map(x=><div><span>{x[0]}</span><b>{x[1]}</b></div>)}</div><SectionHead eyebrow="FAQ" title="자주 묻는 질문"/><div className="faq">{['개발 경험이 없어도 지원할 수 있나요?','학교나 전공에 제한이 있나요?','활동은 주로 언제 진행되나요?'].map(x=><details key={x}><summary>{x}<ChevronDown/></summary><p>네, 가능합니다. 현재의 실력보다 함께 배우고 실행하려는 태도를 더 중요하게 생각합니다.</p></details>)}</div></section></>}
-
-function Contact(){return <><PageHero eyebrow="CONTACT" title={<>SHIFT와 연결되는<br/><em>가장 쉬운 방법.</em></>} description="궁금한 점이 있다면 언제든 편하게 연락해주세요."/><section className="section container contact-grid"><div><SectionHead eyebrow="GET IN TOUCH" title="연락처" text="문의 내용을 확인한 뒤 영업일 기준 2일 이내 답변드려요."/><div className="contact-cards"><a href="mailto:shiftysdh@gmail.com"><Mail/><div><span>공식 이메일</span><b>shiftysdh@gmail.com</b></div><ArrowRight/></a><a href="tel:02-705-1234"><Phone/><div><span>운영 시간 · 10:00 — 18:00</span><b>02-705-1234</b></div><ArrowRight/></a></div></div><div className="location-card"><SectionHead eyebrow="LOCATION" title="찾아오시는 길"/><div className="map-art"><div className="road r1"/><div className="road r2"/><div className="road r3"/><div className="map-pin"><MapPin/></div><span className="map-label">SHIFT</span></div><div className="address"><MapPin/><div><b>서울시 마포구 백범로 35</b><span>SHIFT 대학 IT관 6층 동아리실</span><p>2호선 신촌역 6번 출구에서 도보 10분</p></div></div><Button secondary>지도에서 길찾기 <ExternalLink size={16}/></Button></div></section></>}
-
-function MyPage({setPage,profile,memberStats}){const name=memberStats?.name||profile?.name||'SHIFT 회원';return <><section className="profile-hero"><div className="container profile-row"><div className="avatar-large">{name[0]}</div><div><span className="eyebrow">MY SHIFT</span><h1>안녕하세요, <em>{name}님</em></h1><p>{memberStats?`${memberStats.affiliation} · ${memberStats.cohort} · 학번 ${memberStats.student_id}`:(profile?.email||'회원 정보를 불러오는 중입니다.')}</p></div><button className="button secondary">프로필 수정</button></div></section><section className="section container">{!memberStats&&<div className="member-sync-notice"><Bell/><div><b>Google Sheets 회원 정보를 찾지 못했습니다.</b><span>로그인 이메일과 ‘인원 관리’ 시트의 이메일이 정확히 같은지 확인해주세요.</span></div></div>}<div className="my-summary"><div className="my-card points"><span>현재 보유 마일리지</span><strong>{(memberStats?.total_mileage??0).toLocaleString()}<small>P</small></strong><button onClick={()=>setPage('more')}>마일리지 자세히 보기 <ArrowRight/></button></div><div className="my-card grade"><span>현재 등급</span><strong>{memberStats?.current_tier||'미정'}</strong><p>Google Sheets 기준 최신 등급</p></div><div className="my-card active-count"><span>현재 순위</span><strong>{memberStats?.current_rank?`${memberStats.current_rank}위`:'—'}</strong><div className="floating-calendar"><Trophy/></div></div></div><div className="panel participation"><SectionHead eyebrow="MY ACTIVITIES" title="참여 중인 활동" action={<button className="text-link" onClick={()=>setPage('activities')}>전체 보기 <ArrowRight/></button>}/>{[['CareLink 헬스케어 프로젝트','프로젝트','2026.08 — 2026.11','진행 중','blue'],['AWS 클라우드 3기','스터디','2026.09 — 2026.12','모집 완료','mint'],['AI Product Night','세미나','2026.09.19','참여 예정','purple']].map(x=><div className="participation-row" key={x[0]}><div className={`mini-icon ${x[4]}`}><ActivityIcon type={x[1]}/></div><div><b>{x[0]}</b><span>{x[1]} · {x[2]}</span></div><Badge tone={x[4]}>{x[3]}</Badge><ChevronRight/></div>)}</div></section></>}
-
-function Footer({setPage}){return <footer><div className="container footer-main"><div><Logo onClick={()=>setPage('home')}/><p>Ideas shift.<br/>Impact together.</p></div><div className="footer-links">{navItems.map(([id,label])=><button onClick={()=>setPage(id)} key={id}>{label}</button>)}</div><div><b>SHIFT</b><p>기술로 더 나은 변화를<br/>함께 만들어갑니다.</p></div></div><div className="container footer-bottom"><span>© 2026 SHIFT. All rights reserved.</span><span>Privacy · Terms</span></div></footer>}
-
-function LoginPage({ user, profile, setPage }) {
-  const [mode,setMode]=useState('login');
-  const [form,setForm]=useState({email:'',password:'',name:''});
-  const [message,setMessage]=useState('');
-  const [loading,setLoading]=useState(false);
-  if(user) return <section className="auth-page container"><div className="auth-card"><div className="auth-icon"><Check/></div><h1>로그인되어 있습니다</h1><p>{profile?.email}</p><Button onClick={()=>setPage(profile?.role==='admin'?'admin':'mypage')}>{profile?.role==='admin'?'관리자 페이지':'마이페이지'}로 이동</Button></div></section>;
-  const submit=async e=>{e.preventDefault();setLoading(true);setMessage('');const options=mode==='signup'?{data:{name:form.name}}:undefined;const {error}=mode==='signup'?await supabase.auth.signUp({email:form.email,password:form.password,options}):await supabase.auth.signInWithPassword({email:form.email,password:form.password});setLoading(false);setMessage(error?error.message:mode==='signup'?'가입 확인 이메일을 확인해주세요.':'로그인되었습니다.');};
-  return <section className="auth-page container"><form className="auth-card" onSubmit={submit}><div className="auth-icon"><CircleUserRound/></div><span className="eyebrow">SHIFT ACCOUNT</span><h1>{mode==='login'?'로그인':'회원가입'}</h1><p>SHIFT 회원과 운영진을 위한 계정입니다.</p>{mode==='signup'&&<label>이름<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="이름"/></label>}<label>이메일<input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="name@example.com"/></label><label>비밀번호<input required minLength="8" type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="8자 이상"/></label>{message&&<div className="auth-message">{message}</div>}<Button>{loading?'처리 중...':mode==='login'?'로그인':'가입하기'}</Button><button type="button" className="auth-toggle" onClick={()=>{setMode(mode==='login'?'signup':'login');setMessage('')}}>{mode==='login'?'계정이 없나요? 회원가입':'이미 계정이 있나요? 로그인'}</button></form></section>;
-}
-
-function AdminPage({ profile, newsletters, events, members, notices, documents, suggestions, refresh }) {
-  const [tab,setTab]=useState('newsletters');
-  const [notice,setNotice]=useState('');
-  if(profile?.role!=='admin')return <section className="auth-page container"><div className="auth-card"><h1>접근 권한이 없습니다</h1><p>관리자 계정으로 로그인해주세요.</p></div></section>;
-  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>콘텐츠 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav">{[['newsletters','뉴스레터',Mail],['events','일정',CalendarDays],['notices','공지사항',Bell],['documents','자료실',FolderArchive],['suggestions','건의함',MessageSquareText],['members','회원 권한',Users]].map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>{setTab(id);setNotice('')}} key={id}><I/>{label}</button>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
-}
-
-function NewsletterAdmin({items,refresh,setNotice}){const [form,setForm]=useState({title:'',description:'',published_at:''});const [file,setFile]=useState(null);const [saving,setSaving]=useState(false);const submit=async e=>{e.preventDefault();if(!file)return;setSaving(true);const safeName=`${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'-')}`;const {error:uploadError}=await supabase.storage.from('newsletters').upload(safeName,file,{contentType:'application/pdf'});if(uploadError){setNotice(uploadError.message);setSaving(false);return}const {error}=await supabase.from('newsletters').insert({...form,file_path:safeName});setSaving(false);if(error)setNotice(error.message);else{setForm({title:'',description:'',published_at:''});setFile(null);setNotice('뉴스레터가 등록되었습니다.');refresh();}};const remove=async item=>{if(!confirm(`'${item.title}'을 삭제할까요?`))return;await supabase.storage.from('newsletters').remove([item.file_path]);const {error}=await supabase.from('newsletters').delete().eq('id',item.id);setNotice(error?error.message:'뉴스레터가 삭제되었습니다.');refresh();};return <><SectionHead eyebrow="NEWSLETTER" title="뉴스레터 관리" text="PDF를 업로드하면 게시판에 자동으로 공개됩니다."/><form className="admin-form" onSubmit={submit}><label>제목<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="2026년 6월 뉴스레터"/></label><label>발행일<input required type="date" value={form.published_at} onChange={e=>setForm({...form,published_at:e.target.value})}/></label><label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="뉴스레터 소개"/></label><label className="wide upload-label"><Upload/>PDF 파일<input required type="file" accept="application/pdf" onChange={e=>setFile(e.target.files[0])}/><span>{file?.name||'파일을 선택해주세요'}</span></label><Button>{saving?'업로드 중...':'뉴스레터 등록'}<Plus/></Button></form><AdminList>{items.map(item=><div className="admin-list-row" key={item.id}><FileText/><div><b>{item.title}</b><span>{item.published_at}</span></div><a href={item.file_url} target="_blank" rel="noreferrer"><ExternalLink/></a><button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}
-function EventAdmin({items,refresh,setNotice}){const [form,setForm]=useState({title:'',event_type:'프로젝트',event_date:'2026-09-03',end_date:'2026-09-03',start_time:'14:00',place:'',description:'',visibility:'public'});const submit=async e=>{e.preventDefault();if(form.end_date<form.event_date){setNotice('종료일은 시작일보다 빠를 수 없습니다.');return}const {error}=await supabase.from('calendar_events').insert(form);setNotice(error?error.message:'일정이 등록되었습니다.');if(!error){setForm({...form,title:'',place:'',description:''});refresh();}};const changeStartDate=value=>setForm({...form,event_date:value,end_date:form.end_date<value?value:form.end_date});const remove=async item=>{if(!confirm(`'${item.title}' 일정을 삭제할까요?`))return;const {error}=await supabase.from('calendar_events').delete().eq('id',item.id);setNotice(error?error.message:'일정이 삭제되었습니다.');refresh();};return <><SectionHead eyebrow="CALENDAR" title="일정 관리" text="시작일과 종료일 사이의 모든 날짜에 프로그램이 표시됩니다."/><form className="admin-form" onSubmit={submit}><label>일정명<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>활동 종류<select value={form.event_type} onChange={e=>setForm({...form,event_type:e.target.value})}>{['프로젝트','스터디','세미나','행사'].map(x=><option key={x}>{x}</option>)}</select></label><label>시작일<input required type="date" value={form.event_date} onChange={e=>changeStartDate(e.target.value)}/></label><label>종료일<input required type="date" min={form.event_date} value={form.end_date} onChange={e=>setForm({...form,end_date:e.target.value})}/></label><label>시작 시간<input required type="time" value={form.start_time} onChange={e=>setForm({...form,start_time:e.target.value})}/></label><label>장소<input value={form.place} onChange={e=>setForm({...form,place:e.target.value})}/></label><label>공개 대상<select value={form.visibility} onChange={e=>setForm({...form,visibility:e.target.value})}><option value="public">전체 공개</option><option value="member">회원 전용</option></select></label><label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><Button>일정 등록 <Plus/></Button></form><AdminList>{items.map(item=><div className="admin-list-row" key={item.id}><div className={`mini-dot ${eventTone(item.event_type)}`}/><div><b>{item.title}</b><span>{item.event_date}{item.end_date&&item.end_date!==item.event_date?` — ${item.end_date}`:''} · {item.start_time?.slice(0,5)} · {item.place}</span></div><Badge tone={eventTone(item.event_type)}>{item.event_type}</Badge><button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}
-function NoticeAdmin({items,refresh,setNotice}){const [form,setForm]=useState({title:'',content:'',author_name:'운영진',published_at:new Date().toISOString().slice(0,10),is_pinned:false});const submit=async e=>{e.preventDefault();const {error}=await supabase.from('notices').insert(form);setNotice(error?error.message:'공지사항이 등록되었습니다.');if(!error){setForm({...form,title:'',content:'',is_pinned:false});refresh()}};const remove=async item=>{if(!confirm(`'${item.title}' 공지를 삭제할까요?`))return;const {error}=await supabase.from('notices').delete().eq('id',item.id);setNotice(error?error.message:'공지사항이 삭제되었습니다.');refresh()};return <><SectionHead eyebrow="NOTICE" title="공지사항 관리" text="등록한 글은 게시판 공지사항에 바로 공개됩니다."/><form className="admin-form" onSubmit={submit}><label>제목<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>작성자 표시<input required value={form.author_name} onChange={e=>setForm({...form,author_name:e.target.value})}/></label><label>게시일<input required type="date" value={form.published_at} onChange={e=>setForm({...form,published_at:e.target.value})}/></label><label className="check-label"><input type="checkbox" checked={form.is_pinned} onChange={e=>setForm({...form,is_pinned:e.target.checked})}/> 필독 공지로 표시</label><label className="wide">내용<textarea required rows="7" value={form.content} onChange={e=>setForm({...form,content:e.target.value})}/></label><Button>공지 등록 <Plus/></Button></form><AdminList>{items.map(item=><div className="admin-list-row" key={item.id}><Bell/><div><b>{item.title}</b><span>{item.published_at} · {item.author_name}</span></div>{item.is_pinned&&<Badge>필독</Badge>}<button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}
-function DocumentAdmin({items,refresh,setNotice}){const [form,setForm]=useState({title:'',description:'',category:'동아리 규칙'});const [file,setFile]=useState(null);const [saving,setSaving]=useState(false);const submit=async e=>{e.preventDefault();if(!file)return;setSaving(true);const safeName=`${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'-')}`;const {error:uploadError}=await supabase.storage.from('documents').upload(safeName,file,{contentType:file.type});if(uploadError){setNotice(uploadError.message);setSaving(false);return}const {error}=await supabase.from('documents').insert({...form,file_path:safeName});setSaving(false);setNotice(error?error.message:'자료가 등록되었습니다.');if(!error){setForm({title:'',description:'',category:'동아리 규칙'});setFile(null);refresh()}};const remove=async item=>{if(!confirm(`'${item.title}' 자료를 삭제할까요?`))return;await supabase.storage.from('documents').remove([item.file_path]);const {error}=await supabase.from('documents').delete().eq('id',item.id);setNotice(error?error.message:'자료가 삭제되었습니다.');refresh()};return <><SectionHead eyebrow="DOCUMENTS" title="자료실 관리" text="동아리 규칙을 포함한 공식 문서를 업로드합니다."/><form className="admin-form" onSubmit={submit}><label>자료명<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>분류<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{['동아리 규칙','공식 문서','활동 양식','브랜드 자료','기타'].map(x=><option key={x}>{x}</option>)}</select></label><label className="wide">설명<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><label className="wide upload-label"><Upload/>문서 파일<input required type="file" onChange={e=>setFile(e.target.files[0])}/><span>{file?.name||'파일을 선택해주세요'}</span></label><Button>{saving?'업로드 중...':'자료 등록'} <Plus/></Button></form><AdminList>{items.map(item=><div className="admin-list-row" key={item.id}><FileText/><div><b>{item.title}</b><span>{item.category} · {item.description}</span></div><a href={item.file_url} target="_blank" rel="noreferrer"><ExternalLink/></a><button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}
-function SuggestionAdmin({items,refresh,setNotice}){const update=async(item,status)=>{const {error}=await supabase.from('suggestions').update({status}).eq('id',item.id);setNotice(error?error.message:'처리 상태가 변경되었습니다.');refresh()};const remove=async item=>{if(!confirm('이 건의를 삭제할까요?'))return;const {error}=await supabase.from('suggestions').delete().eq('id',item.id);setNotice(error?error.message:'건의가 삭제되었습니다.');refresh()};return <><SectionHead eyebrow="SUGGESTIONS" title="접수된 건의" text="이 내용은 관리자 계정에서만 확인할 수 있습니다."/><div className="suggestion-admin-list">{items.length?items.map(item=><article key={item.id}><div className="suggestion-head"><Badge tone={item.status==='완료'?'mint':'blue'}>{item.status}</Badge><b>{item.suggestion_type}</b><time>{new Date(item.created_at).toLocaleString('ko-KR')}</time></div><p>{item.content}</p><div className="suggestion-foot"><span>{item.is_anonymous?'익명 건의':`${item.profiles?.name||'회원'} · ${item.profiles?.email||''}`}</span><select value={item.status} onChange={e=>update(item,e.target.value)}><option>접수</option><option>검토 중</option><option>완료</option></select><button onClick={()=>remove(item)}><Trash2/></button></div></article>):<div className="board-empty"><MessageSquareText/><p>접수된 건의가 없습니다.</p></div>}</div></>}
-function MemberAdmin({items,currentId,refresh,setNotice}){const change=async(item,role)=>{if(item.id===currentId&&role==='member'){setNotice('현재 로그인한 관리자의 권한은 직접 해제할 수 없습니다.');return}const {error}=await supabase.from('profiles').update({role}).eq('id',item.id);setNotice(error?error.message:'회원 권한이 변경되었습니다.');refresh();};return <><SectionHead eyebrow="MEMBERS" title="회원 권한 관리" text="가입한 회원에게 관리자 권한을 부여하거나 해제합니다."/><AdminList>{items.map(item=><div className="admin-list-row member-admin-row" key={item.id}><span className="avatar-mini">{item.name?.[0]||item.email[0].toUpperCase()}</span><div><b>{item.name||'이름 미입력'}</b><span>{item.email}</span></div><select value={item.role} onChange={e=>change(item,e.target.value)} disabled={item.id===currentId}><option value="member">일반 회원</option><option value="admin">관리자</option></select></div>)}</AdminList></>}
-function AdminList({children}){return <div className="admin-list">{children?.length?children:<div className="board-empty"><FolderArchive/><p>등록된 데이터가 없습니다.</p></div>}</div>}
-
-function App(){const [page,setPage]=useState('home');const [user,setUser]=useState(null);const [profile,setProfile]=useState(null);const [newsletters,setNewsletters]=useState([]);const [events,setEvents]=useState([]);const [members,setMembers]=useState([]);const [notices,setNotices]=useState([]);const [documents,setDocuments]=useState([]);const [suggestions,setSuggestions]=useState([]);const [memberSummary,setMemberSummary]=useState(null);const [memberStats,setMemberStats]=useState(null);
-  const loadData=async(currentUser=user)=>{if(!supabase)return;const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow}]=await Promise.all([supabase.from('newsletters').select('*').order('published_at',{ascending:false}),supabase.from('calendar_events').select('*').order('event_date'),supabase.from('notices').select('*').order('is_pinned',{ascending:false}).order('published_at',{ascending:false}),supabase.from('documents').select('*').order('created_at',{ascending:false}),supabase.from('public_member_summary').select('*').eq('id',1).maybeSingle()]);setNewsletters((news||[]).map(item=>({...item,file_url:supabase.storage.from('newsletters').getPublicUrl(item.file_path).data.publicUrl})));setEvents(eventRows||[]);setNotices(noticeRows||[]);setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));setMemberSummary(summaryRow||null);if(currentUser){const [{data:p},{data:stats}]=await Promise.all([supabase.from('profiles').select('*').eq('id',currentUser.id).maybeSingle(),supabase.from('member_stats').select('*').ilike('email',currentUser.email).maybeSingle()]);setProfile(p);setMemberStats(stats||null);if(p?.role==='admin'){const [{data:m},{data:s}]=await Promise.all([supabase.from('profiles').select('*').order('created_at'),supabase.from('suggestions').select('*, profiles(name,email)').order('created_at',{ascending:false})]);setMembers(m||[]);setSuggestions(s||[])}}else{setProfile(null);setMemberStats(null);setMembers([]);setSuggestions([])}};
-  useEffect(()=>{if(!isSupabaseConfigured)return;supabase.auth.getSession().then(({data})=>{const u=data.session?.user||null;setUser(u);loadData(u)});const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{const u=session?.user||null;setUser(u);setTimeout(()=>loadData(u),0)});return()=>subscription.unsubscribe()},[]);
-  const signOut=async()=>{await supabase.auth.signOut();setUser(null);setProfile(null);setPage('home')};
-  const pages={home:<Home setPage={setPage}/>,about:<About summary={memberSummary}/>,activities:<Activities calendarEvents={events}/>,archive:<Archive/>,board:<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>,more:<More setPage={setPage}/>,contact:<Contact/>,mypage:user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>,login:<LoginPage user={user} profile={profile} setPage={setPage}/>,admin:<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} refresh={()=>loadData(user)}/>};return <><Header page={page} setPage={setPage} user={user} profile={profile} signOut={signOut}/><main>{pages[page]||pages.home}</main><Footer setPage={setPage}/></>}
-
-createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);
+createRoot(document.getElementById('root')).render(<React.StrictMode><BrowserRouter><App/></BrowserRouter></React.StrictMode>);

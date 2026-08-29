@@ -62,6 +62,12 @@ function syncAllToSupabase() {
       sync_token: token
     })).filter(row => row.activity_date && row.student_id);
 
+    // 안전장치: 부원 명단이 비어 있으면 동기화 전체 중단.
+    // (시트가 실수로 비워지거나 헤더가 깨졌을 때 DB 전체 삭제 + 가입 제한 해제를 막는다)
+    if (!memberRows.length) {
+      throw new Error('인원 관리 시트에서 부원 데이터를 찾지 못해 동기화를 중단합니다. 시트 상태를 확인해주세요.');
+    }
+
     upsertInChunks_('member_stats', memberRows, 'student_id');
     upsertInChunks_('mileage_items', itemRows, 'activity_name');
     upsertInChunks_('mileage_history', historyRows, 'record_id');

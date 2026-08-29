@@ -1,78 +1,83 @@
 # SHIFT Website
 
-SHIFT 동아리 공식 웹사이트입니다. React, Vite, Supabase로 구성되어 있으며 Google Sheets의 회원·마일리지 데이터를 Apps Script로 Supabase에 동기화합니다.
+SHIFT 동아리 공식 웹사이트. React + Vite + Supabase로 구성되며, Google Sheets의 회원·마일리지 데이터를 Apps Script로 Supabase에 동기화합니다.
 
-## 다른 컴퓨터에서 시작하기
+## 시작하기
 
 ```bash
 git clone https://github.com/dhc-shift/shift-website.git
 cd shift-website
 npm install
-Copy-Item .env.example .env
+cp .env.example .env   # Windows PowerShell: Copy-Item .env.example .env
 npm run dev
 ```
 
-macOS/Linux에서는 `Copy-Item .env.example .env` 대신 `cp .env.example .env`를 사용합니다.
-
-`.env`에 연결할 Supabase 프로젝트의 공개 정보를 입력해야 합니다. 기존 SHIFT 운영 데이터를 함께 사용한다면 프로젝트 관리자로부터 아래 두 공개 값과 Supabase 접근 권한을 받으세요.
+`.env`에 Supabase 프로젝트의 공개 값 두 개를 입력합니다. 값은 운영진에게 받으세요.
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 ```
 
-`.env`는 Git에 올라가지 않습니다. `service_role` 키와 데이터베이스 비밀번호는 절대로 `.env`, 소스 코드, 메신저에 공유하지 마세요.
+`.env`는 Git에 올라가지 않습니다. `service_role` 키와 데이터베이스 비밀번호는 절대 `.env`, 소스 코드, 메신저에 공유하지 마세요.
 
-## 프로젝트 구성
+## 프로젝트 구조
 
-- `src/`: React UI와 Supabase 연결 코드
-- `public/`: 로고와 사이트 이미지
-- `supabase/`: 데이터베이스 초기 설정 및 순차 마이그레이션 SQL
-- `google-apps-script/`: Google Sheets → Supabase 동기화 코드
+```
+src/
+├── main.jsx            앱 조립 + 라우팅 + 데이터 로딩 (App)
+├── supabase.js         Supabase 클라이언트
+├── data.js             정적 콘텐츠 (활동 카드, 아카이브, 메뉴 등)
+├── styles.css          전체 스타일
+├── components/
+│   ├── Header.jsx      상단 내비게이션
+│   ├── Footer.jsx      푸터
+│   └── ui.jsx          공용 소품 (Badge, Button, PageHero 등)
+└── pages/              페이지별 컴포넌트 (파일 1개 = 페이지 1개)
+    ├── Home.jsx  About.jsx  Activities.jsx  Archive.jsx
+    ├── Board.jsx  More.jsx  Contact.jsx
+    ├── MyPage.jsx  LoginPage.jsx (+비밀번호 재설정)
+    └── Admin.jsx       관리자 페이지 (콘텐츠 관리)
+supabase/               DB 마이그레이션 SQL (001→006 순서 실행)
+google-apps-script/     Google Sheets → Supabase 동기화 (원본은 시트의 Apps Script)
+vercel.json             SPA 라우팅용 rewrite 설정
+```
 
-## 기존 SHIFT 프로젝트를 이어서 작업할 때
+## 라우팅
 
-1. 저장소를 clone하고 `npm install`을 실행합니다.
-2. `.env.example`을 `.env`로 복사합니다.
-3. Supabase Dashboard의 Project URL과 Publishable key를 `.env`에 입력합니다.
-4. `npm run dev`로 확인합니다.
-5. 기존 운영 DB에는 아래 SQL을 다시 실행하지 않습니다.
+react-router 기반. 페이지 추가 시:
+1. `src/pages/`에 컴포넌트 생성
+2. `src/main.jsx`의 `<Routes>`에 `<Route>` 추가
+3. 메뉴에 넣으려면 `src/data.js`의 `navItems`에 추가
 
-Google Sheets 동기화 코드를 수정하려면 해당 시트의 Apps Script 프로젝트 편집 권한도 별도로 받아야 합니다. GitHub에 있는 `.gs` 파일은 원본/백업이며 자동으로 Google Apps Script에 배포되지는 않습니다.
+## 인증·보안 구조 (중요)
+
+- **회원가입**: Google Sheets '인원 관리' 시트에 등록된 이메일만 가입 가능 (DB 트리거 `enforce_member_signup`, `006_signup_member_gate.sql`)
+- **관리자**: `profiles.role = 'admin'`. 관리자 페이지 → 회원 권한 탭에서 부여/해제
+- **비밀번호 재설정**: 로그인 화면 "비밀번호를 잊으셨나요?" → 이메일 링크 → `/reset`
+- **익명 건의**: 부원에게는 익명이지만 운영진 화면에는 이름이 표시됨 (제출 화면에 명시되어 있음)
+
+## Google Sheets 동기화
+
+- 시트 수정 → 5분 주기 트리거가 Supabase에 반영 → 웹은 새로고침 시 표시
+- 트리거 설치: 시트 → 확장 프로그램 → Apps Script → `installShiftSyncTrigger` 1회 실행
+- 안전장치: '인원 관리' 시트가 비어 있으면 동기화가 중단됩니다 (전체 삭제 방지)
+- `google-apps-script/ShiftSupabaseSync.gs`는 백업본입니다. **수정하면 시트의 Apps Script에도 직접 붙여넣어야 반영됩니다**
+- Apps Script 스크립트 속성에 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` 필요
 
 ## 새 Supabase 프로젝트를 만들 때
 
-SQL Editor에서 다음 순서대로 한 번씩 실행합니다.
+SQL Editor에서 순서대로 실행: `setup.sql` → `002` → `003` → `004` → `005` → `006`.
+그 후 첫 관리자로 회원가입하고 `promote-first-admin.example.sql`의 이메일을 바꿔 실행합니다.
 
-1. `supabase/setup.sql`
-2. `supabase/002_board_features.sql`
-3. `supabase/003_google_sheets_mileage.sql`
-4. `supabase/004_google_sync_permissions.sql`
-5. `supabase/005_calendar_date_range.sql`
+## 협업 규칙
 
-그 후 첫 관리자 계정으로 회원가입하고, `supabase/promote-first-admin.example.sql`의 이메일을 실제 관리자 이메일로 바꿔 한 번 실행합니다.
+1. **작업 전 반드시 `git pull`**
+2. 기능 단위로 커밋, 메시지는 한 줄 요약
+3. 같은 파일을 동시에 크게 수정하지 않도록 작업 범위를 먼저 공유
+4. `npm run build`가 통과하는 상태로만 push
+5. 비밀키·회원 명단·마일리지 원본 데이터는 저장소에 올리지 않기
 
-Google Apps Script에서는 프로젝트 설정 → 스크립트 속성에 다음 값을 저장합니다.
+## 배포
 
-- `SUPABASE_URL`: 새 프로젝트 URL
-- `SUPABASE_SERVICE_ROLE_KEY`: Supabase의 비공개 service role 키
-
-`google-apps-script/ShiftSupabaseSync.gs`를 시트의 Apps Script에 붙여 넣고 `syncAllToSupabase`, `installShiftSyncTrigger`를 순서대로 한 번 실행합니다.
-
-## 협업 방식
-
-작업 전 `git pull`, 작업 후 `git add`, `git commit`, `git push`를 사용합니다. 같은 파일을 동시에 크게 수정하지 않도록 작업 범위를 먼저 공유하는 것이 좋습니다.
-
-```bash
-git pull
-git add .
-git commit -m "변경 내용 요약"
-git push
-```
-
-## 저장소에 포함하지 않는 것
-
-- `.env`와 모든 비밀키
-- Supabase 데이터베이스 비밀번호
-- 실제 회원 명단과 마일리지 원본 데이터
-- 개인 PC의 절대 경로 및 에디터 전용 설정
+Vercel 연결 (예정). 환경 변수 2개(`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)를 Vercel 프로젝트 설정에 등록하고, 도메인 연결 후 Supabase → Authentication → URL Configuration에 배포 도메인을 추가해야 비밀번호 재설정 링크가 정상 작동합니다.
