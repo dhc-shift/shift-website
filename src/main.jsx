@@ -57,7 +57,7 @@ function App(){
       setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
       setMemberSummary(summaryRow||null);
       setMileageItems(itemRows||[]);
-      setActivities(activityRows||[]);
+      setActivities((activityRows||[]).map(item=>({...item,poster_url:item.poster_path?supabase.storage.from('posters').getPublicUrl(item.poster_path).data.publicUrl:null})));
       if(currentUser){
         const [{data:p},{data:stats},{data:history}]=await Promise.all([
           supabase.from('profiles').select('*').eq('id',currentUser.id).maybeSingle(),

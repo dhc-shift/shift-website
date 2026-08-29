@@ -15,14 +15,24 @@ export default function AdminPage({ profile, newsletters, events, members, notic
 function ActivityAdmin({items,roster,refresh,setNotice}){
   const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',access:'public'};
   const [form,setForm]=useState(empty);
+  const [poster,setPoster]=useState(null);
+  const [saving,setSaving]=useState(false);
   const [memberEdit,setMemberEdit]=useState(null); // 참여자 편집 중인 활동 id
   const [pick,setPick]=useState('');
   const submit=async e=>{
-    e.preventDefault();
-    const payload={...form,apply_start:form.apply_start||null,apply_end:form.apply_end||null};
+    e.preventDefault();setSaving(true);
+    let poster_path='';
+    if(poster){
+      const safeName=`${Date.now()}-${poster.name.replace(/[^a-zA-Z0-9._-]/g,'-')}`;
+      const {error:uploadError}=await supabase.storage.from('posters').upload(safeName,poster,{contentType:poster.type});
+      if(uploadError){setNotice(uploadError.message);setSaving(false);return}
+      poster_path=safeName;
+    }
+    const payload={...form,poster_path,apply_start:form.apply_start||null,apply_end:form.apply_end||null};
     const {error}=await supabase.from('activities').insert(payload);
+    setSaving(false);
     setNotice(error?error.message:'활동이 등록되었습니다.');
-    if(!error){setForm(empty);refresh();}
+    if(!error){setForm(empty);setPoster(null);refresh();}
   };
   const setStatus=async(item,status)=>{
     const {error}=await supabase.from('activities').update({status}).eq('id',item.id);
@@ -31,6 +41,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
   };
   const remove=async item=>{
     if(!confirm(`'${item.title}' 활동을 삭제할까요? 참여자 기록도 함께 삭제됩니다.`))return;
+    if(item.poster_path)await supabase.storage.from('posters').remove([item.poster_path]);
     const {error}=await supabase.from('activities').delete().eq('id',item.id);
     setNotice(error?error.message:'활동이 삭제되었습니다.');refresh();
   };
@@ -59,7 +70,8 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     <label>신청 링크 (구글폼 등)<input type="url" value={form.apply_url} onChange={e=>setForm({...form,apply_url:e.target.value})} placeholder="https://forms.gle/..."/></label>
     <label>공개 대상<select value={form.access} onChange={e=>setForm({...form,access:e.target.value})}><option value="public">전체 공개</option><option value="member">회원 전용</option></select></label>
     <label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-    <Button>활동 등록 <Plus/></Button>
+    <label className="wide upload-label"><Upload/>홍보 포스터 (선택, 5MB 이하)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setPoster(e.target.files[0]||null)}/><span>{poster?.name||'이미지를 선택해주세요'}</span></label>
+    <Button>{saving?'등록 중...':'활동 등록'} <Plus/></Button>
   </form>
   <AdminList>{items.map(item=><div className="admin-activity-row" key={item.id}>
     <div className="admin-list-row">
