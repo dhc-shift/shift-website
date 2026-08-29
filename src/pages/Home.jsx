@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { activityData } from '../data.js';
+import { dday, typeColor } from '../data.js';
 import { ActivityCard, Badge, Button, HeroArt, SectionHead } from '../components/ui.jsx';
+import { CalendarDays } from 'lucide-react';
 
-export default function Home({ setPage, notices = [] }) {
+export default function Home({ setPage, notices = [], activities = [], user }) {
+  const openActivities = activities.filter(a => a.status !== '완료' && (a.access === 'public' || user)).slice(0, 4)
+    .map(a => ({ id: a.id, type: a.activity_type, title: a.title, desc: a.description, period: a.schedule, dday: a.status === '모집 중' ? dday(a.apply_end) : a.status, color: typeColor(a.activity_type) }));
   const slides = [
     { eyebrow: '2026 SECOND HALF', title: <>새로운 가능성은<br/><em>함께할 때 시작돼요</em></>, text: 'SHIFT 2기 신입부원을 모집합니다.', cta: '모집 자세히 보기', art: 'cube' },
     { eyebrow: 'BUILD WITH SHIFT', title: <>아이디어를 세상에<br/><em>실행으로 옮겨보세요</em></>, text: '2026 신규 프로젝트 팀 빌딩이 시작됩니다.', cta: '프로젝트 둘러보기', art: 'rings' },
@@ -44,7 +47,7 @@ export default function Home({ setPage, notices = [] }) {
     </section>
     <section className="section container">
       <SectionHead eyebrow="NOW OPEN" title="지금, 함께할 수 있는 활동" text="관심 있는 활동을 발견하고 새로운 동료를 만나보세요." action={<button className="text-link" onClick={() => setPage('activities')}>전체 보기 <ArrowRight size={15}/></button>}/>
-      <div className="activity-grid">{activityData.map(a => <ActivityCard key={a.id} item={a} onClick={() => setPage('activities')}/>)}</div>
+      {openActivities.length ? <div className="activity-grid">{openActivities.map(a => <ActivityCard key={a.id} item={a} onClick={() => setPage('activities')}/>)}</div> : <div className="board-empty"><CalendarDays/><h3>모집 중인 활동이 없습니다</h3><p>새 활동이 열리면 이곳에서 확인할 수 있어요.</p></div>}
     </section>
   </>;
 }

@@ -8,13 +8,6 @@ export const navItems = [
 export const CONTACT_EMAIL = 'shiftysdh@gmail.com';
 export const GITHUB_ORG_URL = 'https://github.com/dhc-shift';
 
-export const activityData = [
-  { id: 1, type: '프로젝트', title: '헬스케어 데이터랩', desc: '건강 데이터를 더 유용하게 만드는 서비스 개발', period: '08.20 — 09.08', capacity: '12명', dday: 'D-6', access: 'public', color: 'blue', target: 'SHIFT 회원 및 대학생', schedule: '2026.09.22 — 2026.11.28', place: 'SHIFT 프로젝트룸 / 온라인' },
-  { id: 2, type: '스터디', title: 'AWS 클라우드 3기', desc: '클라우드 인프라의 기초부터 배포까지', period: '08.24 — 09.12', capacity: '16명', dday: 'D-10', access: 'member', color: 'mint', target: 'SHIFT 회원', schedule: '2026.09.15 — 2026.12.10 (매주 화)', place: '컴퓨터실 302호 / 온라인 병행' },
-  { id: 3, type: '세미나', title: 'AI Product Night', desc: '실무자가 들려주는 AI 프로덕트 이야기', period: '09.01 — 09.18', capacity: '40명', dday: 'D-16', access: 'public', color: 'purple', target: '관심 있는 누구나', schedule: '2026.09.19 (금) 18:00', place: 'IT관 101호' },
-  { id: 4, type: '행사', title: 'SHIFT 네트워킹 데이', desc: '선배와 후배가 연결되는 커뮤니티 데이', period: '09.05 — 09.20', capacity: '60명', dday: 'D-18', access: 'member', color: 'yellow', target: 'SHIFT 회원 및 졸업생', schedule: '2026.09.26 (토) 17:00', place: '학생회관 라운지' }
-];
-
 export const archives = [
   { type: '프로젝트', title: 'CareLink', period: '2026.03 — 2026.07', desc: '보호자와 가족을 잇는 디지털 헬스케어 서비스', art: 'art-care' },
   { type: '스터디', title: 'AWS 스터디 2기', period: '2026.03 — 2026.06', desc: '함께 배우고 직접 배포하며 익힌 클라우드', art: 'art-cloud' },
@@ -34,3 +27,14 @@ export const boardDescriptions = {
 export const RECRUIT_SITE_URL = 'https://dhc-shift.github.io';
 
 export const eventTone = type => ({프로젝트:'blue',스터디:'mint',세미나:'purple',행사:'lime'}[type] || 'blue');
+
+// 신청 마감일 기준 D-day 문자열
+export const dday = applyEnd => {
+  if (!applyEnd) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(`${applyEnd}T00:00:00`);
+  const diff = Math.round((end - today) / 86400000);
+  return diff < 0 ? '마감' : diff === 0 ? 'D-DAY' : `D-${diff}`;
+};
+
+export const typeColor = type => ({프로젝트:'blue',스터디:'mint',세미나:'purple',행사:'yellow'}[type] || 'blue');

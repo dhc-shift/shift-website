@@ -30,6 +30,8 @@ function App(){
   const [memberStats,setMemberStats]=useState(null);
   const [mileageHistory,setMileageHistory]=useState([]);
   const [mileageItems,setMileageItems]=useState([]);
+  const [activities,setActivities]=useState([]);
+  const [roster,setRoster]=useState([]);
   const [loading,setLoading]=useState(isSupabaseConfigured);
   const [loadError,setLoadError]=useState(false);
 
@@ -40,13 +42,14 @@ function App(){
   const loadData=async(currentUser=user)=>{
     if(!supabase)return;
     try{
-      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows}]=await Promise.all([
+      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows},{data:activityRows}]=await Promise.all([
         supabase.from('newsletters').select('*').order('published_at',{ascending:false}),
         supabase.from('calendar_events').select('*').order('event_date'),
         supabase.from('notices').select('*').order('is_pinned',{ascending:false}).order('published_at',{ascending:false}),
         supabase.from('documents').select('*').order('created_at',{ascending:false}),
         supabase.from('public_member_summary').select('*').eq('id',1).maybeSingle(),
-        supabase.from('mileage_items').select('*').order('base_score',{ascending:false})
+        supabase.from('mileage_items').select('*').order('base_score',{ascending:false}),
+        supabase.from('activities').select('*, activity_members(id,member_name,student_id,member_role)').order('created_at',{ascending:false})
       ]);
       setNewsletters((news||[]).map(item=>({...item,file_url:supabase.storage.from('newsletters').getPublicUrl(item.file_path).data.publicUrl})));
       setEvents(eventRows||[]);
@@ -54,6 +57,7 @@ function App(){
       setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
       setMemberSummary(summaryRow||null);
       setMileageItems(itemRows||[]);
+      setActivities(activityRows||[]);
       if(currentUser){
         const [{data:p},{data:stats},{data:history}]=await Promise.all([
           supabase.from('profiles').select('*').eq('id',currentUser.id).maybeSingle(),
@@ -64,15 +68,17 @@ function App(){
         setMemberStats(stats||null);
         setMileageHistory(history||[]);
         if(p?.role==='admin'){
-          const [{data:m},{data:s}]=await Promise.all([
+          const [{data:m},{data:s},{data:r}]=await Promise.all([
             supabase.from('profiles').select('*').order('created_at'),
-            supabase.from('suggestions').select('*, profiles(name,email)').order('created_at',{ascending:false})
+            supabase.from('suggestions').select('*, profiles(name,email)').order('created_at',{ascending:false}),
+            supabase.from('member_stats').select('student_id,name,cohort').order('name')
           ]);
           setMembers(m||[]);
           setSuggestions(s||[]);
+          setRoster(r||[]);
         }
       }else{
-        setProfile(null);setMemberStats(null);setMileageHistory([]);setMembers([]);setSuggestions([]);
+        setProfile(null);setMemberStats(null);setMileageHistory([]);setMembers([]);setSuggestions([]);setRoster([]);
       }
       setLoadError(false);
     }catch(err){
@@ -100,16 +106,16 @@ function App(){
     <main>
       {loading?<div className="app-loading"><img src="/shift-header-logo.png" alt="SHIFT"/><i/></div>:
       <Routes>
-        <Route path="/" element={<Home setPage={setPage} notices={notices}/>}/>
+        <Route path="/" element={<Home setPage={setPage} notices={notices} activities={activities} user={user}/>}/>
         <Route path="/about" element={<About summary={memberSummary}/>}/>
-        <Route path="/activities" element={<Activities calendarEvents={events} user={user}/>}/>
-        <Route path="/archive" element={<Archive/>}/>
+        <Route path="/activities" element={<Activities calendarEvents={events} user={user} activities={activities}/>}/>
+        <Route path="/archive" element={<Archive activities={activities}/>}/>
         <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
         <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>
-        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
+        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} activities={activities} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>
-        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} refresh={()=>loadData(user)}/>}/>
+        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} activities={activities} roster={roster} refresh={()=>loadData(user)}/>}/>
         <Route path="*" element={<NotFound setPage={setPage}/>}/>
       </Routes>}
     </main>
