@@ -35,8 +35,8 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 
 .member-sync-notice{display:flex;align-items:center;gap:14px;padding:16px 20px;margin-bottom:18px;border:1px solid #f0d99e;border-radius:13px;background:#fffaf0;color:#805e13}.member-sync-notice>svg{width:20px;flex:0 0 auto}.member-sync-notice>div{display:flex;flex-direction:column;gap:4px}.member-sync-notice b{font-size:13px}.member-sync-notice span{font-size:11px;color:#8d7441}
 
-.avatar-mini,.avatar-large{overflow:hidden}
-.avatar-mini img,.avatar-large img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.avatar-mini,.avatar-large{overflow:hidden;position:relative}
+.avatar-mini img,.avatar-large img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;border-radius:inherit;display:block}
 
 /* 히어로 슬라이더: 가로로 매끄럽게 밀리는 트랙 */
 .hero-track{position:absolute;inset:0;display:flex;transition:transform .75s cubic-bezier(.22,.61,.36,1);z-index:1}

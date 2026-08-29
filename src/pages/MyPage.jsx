@@ -20,12 +20,23 @@ function ProfileEditModal({profile,refresh,close}){
   const [removePhoto,setRemovePhoto]=useState(false);
   const [message,setMessage]=useState('');
   const [saving,setSaving]=useState(false);
-  const pickFile=e=>{
+  const pickFile=async e=>{
     const file=e.target.files[0];
     if(!file)return;
     if(file.size>2*1024*1024){setMessage('사진은 2MB 이하만 가능합니다.');return}
     if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setMessage('PNG, JPG, WEBP 형식만 가능합니다.');return}
-    setMessage('');setAvatarFile(file);setRemovePhoto(false);setPreview(URL.createObjectURL(file));
+    try{
+      // 어떤 비율의 사진이든 중앙 기준 정사각형으로 잘라 512px로 정규화
+      const bitmap=await createImageBitmap(file);
+      const side=Math.min(bitmap.width,bitmap.height);
+      const canvas=document.createElement('canvas');
+      canvas.width=512;canvas.height=512;
+      canvas.getContext('2d').drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,512,512);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.88));
+      setMessage('');setAvatarFile(new File([blob],'avatar.jpg',{type:'image/jpeg'}));setRemovePhoto(false);setPreview(canvas.toDataURL('image/jpeg',0.88));
+    }catch{
+      setMessage('사진을 처리하지 못했습니다. 다른 이미지로 시도해주세요.');
+    }
   };
   const save=async e=>{
     e.preventDefault();setSaving(true);setMessage('');
