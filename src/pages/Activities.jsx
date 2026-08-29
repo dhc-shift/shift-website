@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin, Users } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin, Users } from 'lucide-react';
 import { activityData, eventTone } from '../data.js';
-import { ActivityIcon, Badge, Button, PageHero, SectionHead } from '../components/ui.jsx';
+import { ActivityIcon, Badge, PageHero, SectionHead } from '../components/ui.jsx';
 
 export default function Activities({ calendarEvents = [], user }) {
   const today = new Date();
@@ -30,7 +30,7 @@ export default function Activities({ calendarEvents = [], user }) {
     <div className="calendar-card"><div className="calendar-head"><div><span className="eyebrow">SHIFT CALENDAR</span><h2>{monthName}</h2></div><div><button onClick={()=>changeMonth(-1)} aria-label="이전 달"><ChevronLeft/></button><button onClick={()=>changeMonth(1)} aria-label="다음 달"><ChevronRight/></button></div></div><Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} dbEvents={monthEvents} year={viewYear} month={viewMonth}/><div className="legend"><span><i className="blue"/>프로젝트</span><span><i className="mint"/>스터디</span><span><i className="purple"/>세미나</span><span><i className="lime"/>행사</span></div></div>
     <div className="recruit-panel"><SectionHead eyebrow="RECRUITING" title="모집 중인 활동"/><div className="recruit-list">{visible.map(a=><button key={a.id} className={selected.id===a.id?'selected':''} onClick={()=>setSelected(a)}><div className={`mini-icon ${a.color}`}><ActivityIcon type={a.type}/></div><div><Badge tone={a.color}>{a.type}</Badge><h3>{a.title}</h3><span>{a.period} · {a.capacity}</span></div><strong>{a.dday}</strong></button>)}</div></div>
     <div className="today-card"><SectionHead eyebrow={`${monthName} ${selectedDay}일`} title={isTodaySelected ? '오늘 일정' : '선택한 날짜의 일정'}/><div className="timeline">{selectedSchedules.length > 0 ? selectedSchedules.map(x=><div className="timeline-item" key={`${x.time}-${x.title}`}><time>{x.time}</time><i className={x.tone}/><div><b>{x.title}</b><span>{x.place}</span></div></div>) : <div className="empty-schedule"><CalendarDays/><b>등록된 일정이 없어요</b><span>다른 날짜를 선택해 일정을 확인해보세요.</span></div>}</div></div>
-    <div className="detail-card"><div className="detail-top"><div><Badge tone={selected.color}>{selected.type}</Badge><h2>{selected.title}</h2><p>{selected.desc}</p></div><strong>{selected.dday}</strong></div><div className="detail-info">{[[Users,'대상','SHIFT 회원 및 대학생'],[CalendarDays,'일정','2026.09.22 — 2026.11.28'],[MapPin,'장소','SHIFT 프로젝트룸 / 온라인'],[Users,'모집 인원',selected.capacity],[Clock3,'신청 기간',selected.period]].map(([I,k,v])=><div key={k}><I/><span>{k}</span><b>{v}</b></div>)}</div><Button>이 활동에 신청하기 <ArrowRight size={17}/></Button></div>
+    <div className="detail-card"><div className="detail-top"><div><Badge tone={selected.color}>{selected.type}</Badge><h2>{selected.title}</h2><p>{selected.desc}</p></div><strong>{selected.dday}</strong></div><div className="detail-info">{[[Users,'대상',selected.target],[CalendarDays,'일정',selected.schedule],[MapPin,'장소',selected.place],[Users,'모집 인원',selected.capacity],[Clock3,'신청 기간',selected.period]].map(([I,k,v])=><div key={k}><I/><span>{k}</span><b>{v}</b></div>)}</div><button className="button" disabled title="신청 방법은 곧 공지됩니다">신청 준비 중</button></div>
   </section></>;
 }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import './styles.css';
 import { isSupabaseConfigured, supabase } from './supabase.js';
 import Header from './components/Header.jsx';
@@ -11,7 +11,6 @@ import Activities from './pages/Activities.jsx';
 import Archive from './pages/Archive.jsx';
 import Board from './pages/Board.jsx';
 import More from './pages/More.jsx';
-import Contact from './pages/Contact.jsx';
 import MyPage from './pages/MyPage.jsx';
 import LoginPage, { UpdatePasswordPage } from './pages/LoginPage.jsx';
 import AdminPage from './pages/Admin.jsx';
@@ -99,7 +98,7 @@ function App(){
     <Header page={page} setPage={setPage} user={user} profile={profile} memberStats={memberStats} signOut={signOut}/>
     {loadError&&<div className="admin-notice container" role="alert">데이터를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 새로고침해주세요.</div>}
     <main>
-      {loading?<div className="board-empty" style={{minHeight:'50vh',justifyContent:'center'}}><p>불러오는 중...</p></div>:
+      {loading?<div className="app-loading"><img src="/shift-header-logo.png" alt="SHIFT"/><i/></div>:
       <Routes>
         <Route path="/" element={<Home setPage={setPage} notices={notices}/>}/>
         <Route path="/about" element={<About summary={memberSummary}/>}/>
@@ -107,16 +106,19 @@ function App(){
         <Route path="/archive" element={<Archive/>}/>
         <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
         <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>
-        <Route path="/contact" element={<Contact/>}/>
         <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>
         <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} refresh={()=>loadData(user)}/>}/>
-        <Route path="*" element={<Navigate to="/" replace/>}/>
+        <Route path="*" element={<NotFound setPage={setPage}/>}/>
       </Routes>}
     </main>
     <Footer setPage={setPage}/>
   </>;
+}
+
+function NotFound({ setPage }){
+  return <section className="auth-page container"><div className="auth-card"><span className="eyebrow">404</span><h1>페이지를 찾을 수 없어요</h1><p>주소가 바뀌었거나 삭제된 페이지입니다.</p><button className="button" onClick={()=>setPage('home')}>홈으로 돌아가기</button></div></section>;
 }
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><BrowserRouter><App/></BrowserRouter></React.StrictMode>);
