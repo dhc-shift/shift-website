@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
 import { eventTone, typeColor } from '../data.js';
 import { supabase } from '../supabase.js';
-import { AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
+import { ActivityIcon, AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
 
 export default function AdminPage({ profile, newsletters, events, members, notices, documents, suggestions, activities, roster, refresh }) {
   const [tab,setTab]=useState('activities');
@@ -88,7 +88,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
   </form>
   <AdminList>{items.map(item=><div className="admin-activity-row" key={item.id}>
     <div className="admin-list-row activity-grid-row">
-      <div className={`mini-icon ${typeColor(item.activity_type)}`}><Lightbulb/></div>
+      <div className={`mini-icon ${typeColor(item.activity_type)}`}><ActivityIcon type={item.activity_type}/></div>
       <div><b>{item.title}</b><span>{item.activity_type} · 참여 {item.activity_members?.length||0}명{item.apply_end?` · 마감 ${item.apply_end}`:''}</span></div>
       <select value={item.status} onChange={e=>setStatus(item,e.target.value)}><option>모집 중</option><option>진행 중</option><option>완료</option></select>
       <button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button>
