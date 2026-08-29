@@ -31,6 +31,7 @@ function App(){
   const [mileageHistory,setMileageHistory]=useState([]);
   const [mileageItems,setMileageItems]=useState([]);
   const [activities,setActivities]=useState([]);
+  const [banners,setBanners]=useState([]);
   const [roster,setRoster]=useState([]);
   const [loading,setLoading]=useState(isSupabaseConfigured);
   const [loadError,setLoadError]=useState(false);
@@ -42,14 +43,15 @@ function App(){
   const loadData=async(currentUser=user)=>{
     if(!supabase)return;
     try{
-      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows},{data:activityRows}]=await Promise.all([
+      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows},{data:activityRows},{data:bannerRows}]=await Promise.all([
         supabase.from('newsletters').select('*').order('published_at',{ascending:false}),
         supabase.from('calendar_events').select('*').order('event_date'),
         supabase.from('notices').select('*').order('is_pinned',{ascending:false}).order('published_at',{ascending:false}),
         supabase.from('documents').select('*').order('created_at',{ascending:false}),
         supabase.from('public_member_summary').select('*').eq('id',1).maybeSingle(),
         supabase.from('mileage_items').select('*').order('base_score',{ascending:false}),
-        supabase.from('activities').select('*, activity_members(id,member_name,student_id,member_role), activity_photos(id,photo_path)').order('created_at',{ascending:false})
+        supabase.from('activities').select('*, activity_members(id,member_name,student_id,member_role), activity_photos(id,photo_path)').order('created_at',{ascending:false}),
+        supabase.from('banners').select('*').order('sort_order').order('created_at')
       ]);
       setNewsletters((news||[]).map(item=>({...item,file_url:supabase.storage.from('newsletters').getPublicUrl(item.file_path).data.publicUrl})));
       setEvents(eventRows||[]);
@@ -57,6 +59,7 @@ function App(){
       setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
       setMemberSummary(summaryRow||null);
       setMileageItems(itemRows||[]);
+      setBanners(bannerRows||[]);
       setActivities((activityRows||[]).map(item=>({...item,poster_url:item.poster_path?supabase.storage.from('posters').getPublicUrl(item.poster_path).data.publicUrl:null,photos:(item.activity_photos||[]).map(ph=>({...ph,url:supabase.storage.from('posters').getPublicUrl(ph.photo_path).data.publicUrl}))})));
       if(currentUser){
         const [{data:p},{data:stats},{data:history}]=await Promise.all([
@@ -106,7 +109,7 @@ function App(){
     <main>
       {loading?<div className="app-loading"><img src="/shift-header-logo.png" alt="SHIFT"/><i/></div>:
       <Routes>
-        <Route path="/" element={<Home setPage={setPage} notices={notices} activities={activities} user={user}/>}/>
+        <Route path="/" element={<Home setPage={setPage} notices={notices} activities={activities} user={user} banners={banners}/>}/>
         <Route path="/about" element={<About summary={memberSummary}/>}/>
         <Route path="/activities" element={<Activities calendarEvents={events} user={user} activities={activities} setPage={setPage}/>}/>
         <Route path="/archive" element={<Archive activities={activities}/>}/>
@@ -115,7 +118,7 @@ function App(){
         <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} activities={activities} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>
-        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} activities={activities} roster={roster} refresh={()=>loadData(user)}/>}/>
+        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} activities={activities} roster={roster} banners={banners} refresh={()=>loadData(user)}/>}/>
         <Route path="*" element={<NotFound setPage={setPage}/>}/>
       </Routes>}
     </main>

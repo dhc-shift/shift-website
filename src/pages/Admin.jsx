@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Archive as ArchiveIcon, Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
+import { Archive as ArchiveIcon, Bell, GalleryHorizontal, CalendarDays, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
 import { eventTone, typeColor } from '../data.js';
 import { supabase } from '../supabase.js';
 import { ActivityIcon, AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
 
-export default function AdminPage({ profile, newsletters, events, members, notices, documents, suggestions, activities, roster, refresh }) {
+export default function AdminPage({ profile, newsletters, events, members, notices, documents, suggestions, activities, roster, banners, refresh }) {
   const [tab,setTab]=useState('activities');
   const [notice,setNotice]=useState('');
   if(profile?.role!=='admin')return <section className="auth-page container"><div className="auth-card"><h1>접근 권한이 없습니다</h1><p>관리자 계정으로 로그인해주세요.</p></div></section>;
-  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>콘텐츠 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav">{[['activities','활동',Lightbulb],['archive','아카이브',ArchiveIcon],['newsletters','뉴스레터',Mail],['events','일정',CalendarDays],['notices','공지사항',Bell],['documents','자료실',FolderArchive],['suggestions','건의함',MessageSquareText],['members','회원 권한',Users]].map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>{setTab(id);setNotice('')}} key={id}><I/>{label}</button>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='activities'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode="active"/>} {tab==='archive'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode="archive"/>} {tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
+  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>콘텐츠 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav">{[['activities','활동',Lightbulb],['archive','아카이브',ArchiveIcon],['banners','배너',GalleryHorizontal],['newsletters','뉴스레터',Mail],['events','일정',CalendarDays],['notices','공지사항',Bell],['documents','자료실',FolderArchive],['suggestions','건의함',MessageSquareText],['members','회원 권한',Users]].map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>{setTab(id);setNotice('')}} key={id}><I/>{label}</button>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='activities'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode="active"/>} {tab==='archive'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode="archive"/>} {tab==='banners'&&<BannerAdmin items={banners} refresh={refresh} setNotice={setNotice}/>} {tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
 }
 
 
@@ -146,6 +146,42 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
       </div>
     </div>}
   </div>)}</AdminList></>}
+
+function BannerAdmin({items,refresh,setNotice}){
+  const empty={eyebrow:'',title_line1:'',title_line2:'',description:'',cta_label:'',cta_url:'',art:'cube',sort_order:0,is_active:true};
+  const [form,setForm]=useState(empty);
+  const [editing,setEditing]=useState(null);
+  const startEdit=item=>{setEditing(item);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active});};
+  const cancelEdit=()=>{setEditing(null);setForm(empty)};
+  const submit=async e=>{
+    e.preventDefault();
+    const {error}=editing?await supabase.from('banners').update(form).eq('id',editing.id):await supabase.from('banners').insert(form);
+    setNotice(error?error.message:editing?'배너가 수정되었습니다.':'배너가 등록되었습니다.');
+    if(!error){cancelEdit();refresh();}
+  };
+  const toggleActive=async item=>{
+    const {error}=await supabase.from('banners').update({is_active:!item.is_active}).eq('id',item.id);
+    setNotice(error?error.message:item.is_active?'배너가 숨겨졌습니다.':'배너가 노출됩니다.');refresh();
+  };
+  const remove=async item=>{
+    if(!confirm(`'${item.title_line1}' 배너를 삭제할까요?`))return;
+    const {error}=await supabase.from('banners').delete().eq('id',item.id);
+    setNotice(error?error.message:'배너가 삭제되었습니다.');if(editing?.id===item.id)cancelEdit();refresh();
+  };
+  return <><SectionHead eyebrow="BANNERS" title={editing?`배너 수정 — ${editing.title_line1}`:'홈 배너 관리'} text="홈 상단에 순환 표시되는 배너입니다. 등록된 배너가 하나도 없으면 기본 배너 3장이 표시됩니다."/>
+  <form className="admin-form" onSubmit={submit}>
+    <label>상단 라벨 (영문 소제목)<input value={form.eyebrow} onChange={e=>setForm({...form,eyebrow:e.target.value})} placeholder="2026 SECOND HALF"/></label>
+    <label>배경 그래픽<select value={form.art} onChange={e=>setForm({...form,art:e.target.value})}><option value="cube">큐브</option><option value="rings">링</option><option value="network">네트워크</option></select></label>
+    <label>제목 1줄<input required value={form.title_line1} onChange={e=>setForm({...form,title_line1:e.target.value})} placeholder="새로운 가능성은"/></label>
+    <label>제목 2줄 (색상 강조)<input value={form.title_line2} onChange={e=>setForm({...form,title_line2:e.target.value})} placeholder="함께할 때 시작돼요"/></label>
+    <label className="wide">설명<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="SHIFT 2기 신입부원을 모집합니다."/></label>
+    <label>버튼 문구 (비우면 버튼 없음)<input value={form.cta_label} onChange={e=>setForm({...form,cta_label:e.target.value})} placeholder="모집 자세히 보기"/></label>
+    <label>버튼 링크<input value={form.cta_url} onChange={e=>setForm({...form,cta_url:e.target.value})} placeholder="/activities 또는 https://..."/></label>
+    <label>정렬 순서 (작을수록 앞)<input type="number" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label>
+    <label className="check-label"><input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})}/> 노출</label>
+    <div className="form-actions"><Button>{editing?'수정 저장':'배너 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
+  </form>
+  <AdminList>{items.map(item=><div className="admin-list-row edit-grid-row" key={item.id}><GalleryHorizontal/><div><b>{item.title_line1}{item.title_line2?` ${item.title_line2}`:''}</b><span>{item.eyebrow||'라벨 없음'} · 순서 {item.sort_order}{item.is_active?'':' · 숨김'}</span></div><button type="button" className={item.is_active?'pin-toggle on':'pin-toggle'} onClick={()=>toggleActive(item)} title={item.is_active?'숨기기':'노출하기'}>{item.is_active?'ON':'OFF'}</button><button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button><button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}
 
 function NewsletterAdmin({items,refresh,setNotice}){
   const empty={title:'',description:'',published_at:''};
