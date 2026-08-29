@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Lightbulb, Mail, MessageSquareText, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
+import { Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
 import { eventTone, typeColor } from '../data.js';
 import { supabase } from '../supabase.js';
 import { AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
@@ -15,24 +15,34 @@ export default function AdminPage({ profile, newsletters, events, members, notic
 function ActivityAdmin({items,roster,refresh,setNotice}){
   const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',access:'public'};
   const [form,setForm]=useState(empty);
+  const [editing,setEditing]=useState(null); // 수정 중인 활동 (원본 객체)
   const [poster,setPoster]=useState(null);
   const [saving,setSaving]=useState(false);
   const [memberEdit,setMemberEdit]=useState(null); // 참여자 편집 중인 활동 id
   const [pick,setPick]=useState('');
+  const startEdit=item=>{
+    setEditing(item);setPoster(null);
+    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,access:item.access});
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+  const cancelEdit=()=>{setEditing(null);setForm(empty);setPoster(null)};
   const submit=async e=>{
     e.preventDefault();setSaving(true);
-    let poster_path='';
+    let poster_path=editing?editing.poster_path:'';
     if(poster){
       const safeName=`${Date.now()}-${poster.name.replace(/[^a-zA-Z0-9._-]/g,'-')}`;
       const {error:uploadError}=await supabase.storage.from('posters').upload(safeName,poster,{contentType:poster.type});
       if(uploadError){setNotice(uploadError.message);setSaving(false);return}
+      if(editing?.poster_path)await supabase.storage.from('posters').remove([editing.poster_path]);
       poster_path=safeName;
     }
     const payload={...form,poster_path,apply_start:form.apply_start||null,apply_end:form.apply_end||null};
-    const {error}=await supabase.from('activities').insert(payload);
+    const {error}=editing
+      ?await supabase.from('activities').update(payload).eq('id',editing.id)
+      :await supabase.from('activities').insert(payload);
     setSaving(false);
-    setNotice(error?error.message:'활동이 등록되었습니다.');
-    if(!error){setForm(empty);setPoster(null);refresh();}
+    setNotice(error?error.message:editing?'활동이 수정되었습니다.':'활동이 등록되었습니다.');
+    if(!error){cancelEdit();refresh();}
   };
   const setStatus=async(item,status)=>{
     const {error}=await supabase.from('activities').update({status}).eq('id',item.id);
@@ -43,7 +53,9 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     if(!confirm(`'${item.title}' 활동을 삭제할까요? 참여자 기록도 함께 삭제됩니다.`))return;
     if(item.poster_path)await supabase.storage.from('posters').remove([item.poster_path]);
     const {error}=await supabase.from('activities').delete().eq('id',item.id);
-    setNotice(error?error.message:'활동이 삭제되었습니다.');refresh();
+    setNotice(error?error.message:'활동이 삭제되었습니다.');
+    if(editing?.id===item.id)cancelEdit();
+    refresh();
   };
   const addMember=async item=>{
     if(!pick)return;
@@ -57,7 +69,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     const {error}=await supabase.from('activity_members').delete().eq('id',m.id);
     setNotice(error?error.message:'참여자가 제외되었습니다.');refresh();
   };
-  return <><SectionHead eyebrow="ACTIVITIES" title="활동 관리" text="활동을 등록하고 참여 부원을 지정합니다. '완료' 처리하면 참여자 이름과 함께 아카이브에 표시됩니다."/>
+  return <><SectionHead eyebrow="ACTIVITIES" title={editing?`활동 수정 — ${editing.title}`:'활동 관리'} text="활동을 등록하고 참여 부원을 지정합니다. '완료' 처리하면 참여자 이름과 함께 아카이브에 표시됩니다."/>
   <form className="admin-form" onSubmit={submit}>
     <label>활동명<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
     <label>유형<select value={form.activity_type} onChange={e=>setForm({...form,activity_type:e.target.value})}>{['프로젝트','스터디','세미나','행사'].map(x=><option key={x}>{x}</option>)}</select></label>
@@ -70,14 +82,15 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     <label>신청 링크 (구글폼 등)<input type="url" value={form.apply_url} onChange={e=>setForm({...form,apply_url:e.target.value})} placeholder="https://forms.gle/..."/></label>
     <label>공개 대상<select value={form.access} onChange={e=>setForm({...form,access:e.target.value})}><option value="public">전체 공개</option><option value="member">회원 전용</option></select></label>
     <label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-    <label className="wide upload-label"><Upload/>홍보 포스터 (선택, 5MB 이하)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setPoster(e.target.files[0]||null)}/><span>{poster?.name||'이미지를 선택해주세요'}</span></label>
-    <Button>{saving?'등록 중...':'활동 등록'} <Plus/></Button>
+    <label className="wide upload-label"><Upload/>홍보 포스터 (선택, 5MB 이하)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setPoster(e.target.files[0]||null)}/><span>{poster?.name||(editing?.poster_path?'기존 포스터 유지 (새 이미지를 선택하면 교체)':'이미지를 선택해주세요')}</span></label>
+    <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':'활동 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
   </form>
   <AdminList>{items.map(item=><div className="admin-activity-row" key={item.id}>
-    <div className="admin-list-row">
+    <div className="admin-list-row activity-grid-row">
       <div className={`mini-icon ${typeColor(item.activity_type)}`}><Lightbulb/></div>
       <div><b>{item.title}</b><span>{item.activity_type} · 참여 {item.activity_members?.length||0}명{item.apply_end?` · 마감 ${item.apply_end}`:''}</span></div>
       <select value={item.status} onChange={e=>setStatus(item,e.target.value)}><option>모집 중</option><option>진행 중</option><option>완료</option></select>
+      <button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button>
       <button onClick={()=>{setMemberEdit(memberEdit===item.id?null:item.id);setPick('')}} title="참여자 관리" aria-label="참여자 관리"><UserPlus/></button>
       <button onClick={()=>remove(item)}><Trash2/></button>
     </div>
