@@ -9,12 +9,13 @@ export const CONTACT_EMAIL = 'shiftysdh@gmail.com';
 export const GITHUB_ORG_URL = 'https://github.com/dhc-shift';
 
 export const archives = [
-  { type: '프로젝트', title: 'CareLink', period: '2026.03 — 2026.07', desc: '보호자와 가족을 잇는 디지털 헬스케어 서비스', art: 'art-care' },
-  { type: '스터디', title: 'AWS 스터디 2기', period: '2026.03 — 2026.06', desc: '함께 배우고 직접 배포하며 익힌 클라우드', art: 'art-cloud' },
-  { type: '세미나', title: '데이터 분석 세미나', period: '2026.05.18', desc: '데이터로 문제를 정의하는 실전 세션', art: 'art-data' },
-  { type: '행사', title: '2026 SHIFT OT', period: '2026.03.08', desc: '새로운 시작을 함께한 첫 번째 만남', art: 'art-people' },
-  { type: '프로젝트', title: 'Medi Note', period: '2025.09 — 2026.01', desc: '진료 기록을 쉽고 안전하게 정리하는 경험', art: 'art-note' },
-  { type: '행사', title: 'Homecoming Day', period: '2025.11.22', desc: 'SHIFT의 선후배가 한자리에 모인 밤', art: 'art-event' }
+  { type: '세미나', title: '인사이트 세미나', period: '2026-1학기', desc: '개강총회와 함께 진행한 학부·업계 인사이트 공유 세미나', art: 'art-data' },
+  { type: '세미나', title: 'IT 온보딩 세션 — 헬스케어 기술·동향', period: '2026-1학기', desc: '디지털 헬스케어 기술과 산업 동향을 소개한 온보딩 세션', art: 'art-care' },
+  { type: '세미나', title: 'IT 온보딩 세션 — 취업 트렌드', period: '2026-1학기', desc: 'IT·헬스케어 분야 취업 트렌드를 다룬 온보딩 세션', art: 'art-note' },
+  { type: '세미나', title: 'IT 온보딩 세션 — 협업 툴 교육', period: '2026-1학기', desc: '슬랙 등 협업 도구 사용법을 익힌 온보딩 세션', art: 'art-cloud' },
+  { type: '스터디', title: '소모임 운영 (대외활동 · 영어 · 코딩)', period: '2026-1학기', desc: '관심 분야별 소모임 3개를 각 5~7명 규모로 운영', art: 'art-people' },
+  { type: '행사', title: 'SHIFT 커피챗', period: '2026-1학기', desc: '소모임 주제 발굴을 위한 수요 파악 커피챗', art: 'art-event' },
+  { type: '프로젝트', title: '신입부원 모집 웹사이트', period: '2026-1학기', desc: '지원서 접수와 이력서 자동 발송 기능을 갖춘 모집 웹 개발·운영', art: 'art-care' }
 ];
 
 export const boardDescriptions = {
