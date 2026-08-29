@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { dday, typeColor } from '../data.js';
 import { ActivityCard, Badge, Button, HeroArt, SectionHead } from '../components/ui.jsx';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Lock } from 'lucide-react';
 
 export default function Home({ setPage, notices = [], activities = [], user }) {
   const openActivities = activities.filter(a => a.status !== '완료' && (a.access === 'public' || user)).slice(0, 4)
@@ -36,7 +36,9 @@ export default function Home({ setPage, notices = [], activities = [], user }) {
       <aside className="notice-rail">
         <div className="notice-rail-head"><span className="eyebrow">NOTICE</span><h2>공지사항</h2><button className="text-link" onClick={() => setPage('board')}>전체 보기 <ArrowRight size={14}/></button></div>
         <div className="notice-rail-list">
-          {recentNotices.length
+          {!user
+            ? <div className="notice-rail-empty"><Lock size={22}/><b>부원 전용 공지입니다</b><span>로그인 후 확인할 수 있어요.</span><button className="button secondary" onClick={() => setPage('login')} style={{marginTop:'12px'}}>로그인</button></div>
+            : recentNotices.length
             ? recentNotices.map(n => <button key={n.id} onClick={() => setPage('board')}>
                 <div className="notice-rail-top"><Badge tone={n.is_pinned ? 'blue' : 'gray'}>{n.is_pinned ? '필독' : '공지'}</Badge><time>{n.published_at}</time></div>
                 <strong>{n.title}</strong>

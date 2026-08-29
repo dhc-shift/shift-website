@@ -108,7 +108,7 @@ function App(){
       <Routes>
         <Route path="/" element={<Home setPage={setPage} notices={notices} activities={activities} user={user}/>}/>
         <Route path="/about" element={<About summary={memberSummary}/>}/>
-        <Route path="/activities" element={<Activities calendarEvents={events} user={user} activities={activities}/>}/>
+        <Route path="/activities" element={<Activities calendarEvents={events} user={user} activities={activities} setPage={setPage}/>}/>
         <Route path="/archive" element={<Archive activities={activities}/>}/>
         <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
         <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>

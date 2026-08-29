@@ -3,7 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock3, ExternalLink, MapPin, 
 import { dday, eventTone, typeColor } from '../data.js';
 import { ActivityIcon, Badge, PageHero, SectionHead } from '../components/ui.jsx';
 
-export default function Activities({ calendarEvents = [], activities = [], user }) {
+export default function Activities({ calendarEvents = [], activities = [], user, setPage }) {
   const today = new Date();
   const isMember = Boolean(user);
   const visible = activities.filter(a => a.status !== '완료' && (a.access === 'public' || isMember));
@@ -37,7 +37,9 @@ export default function Activities({ calendarEvents = [], activities = [], user 
       {selected.activity_members?.length>0 && <div className="member-chips"><span className="chips-label">{selected.status==='진행 중'?'현재 작업 중':'참여 부원'}</span>{selected.activity_members.map(m=><span className="member-chip" key={m.id}>{m.member_name}</span>)}</div>}
       {selected.status!=='모집 중'
         ? <button className="button" disabled>모집이 마감된 활동입니다</button>
-        : selected.apply_url
+        : !user
+          ? <button className="button" onClick={()=>setPage('login')}>로그인 후 신청할 수 있어요</button>
+          : selected.apply_url
           ? <a className="button" href={selected.apply_url} target="_blank" rel="noreferrer">신청하러 가기 <ExternalLink size={16}/></a>
           : selected.apply_note
             ? <div className="apply-note"><b>신청 방법</b><span>{selected.apply_note}</span></div>
