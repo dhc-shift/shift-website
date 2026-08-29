@@ -15,7 +15,7 @@ export default function Header({ page, setPage, user, profile, signOut }) {
       <div className="header-actions">
         {profile?.role === 'admin' && <button className="admin-shortcut" onClick={() => move('admin')}><Settings/><span>관리</span></button>}
         <button className="profile-button" onClick={() => move(user ? 'mypage' : 'login')} aria-label={user ? '마이페이지' : '로그인'}>
-          <span className="avatar-mini">{user ? (profile?.name?.[0] || 'S') : <LogIn/>}</span><span>{user ? '마이페이지' : '로그인'}</span>
+          <span className="avatar-mini">{user ? (profile?.avatar_url ? <img src={profile.avatar_url} alt=""/> : (profile?.name?.[0] || 'S')) : <LogIn/>}</span><span>{user ? '마이페이지' : '로그인'}</span>
         </button>
         {user && <button className="logout-button" onClick={signOut} aria-label="로그아웃"><LogOut/></button>}
         <button className="mobile-menu" onClick={() => setOpen(!open)} aria-label="메뉴">{open ? <X /> : <Menu />}</button>

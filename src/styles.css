@@ -34,3 +34,6 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 .logo{width:110px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;overflow:hidden;flex:0 0 auto}.logo img{display:block;width:165px;height:165px;max-width:none;object-fit:contain;flex:0 0 auto;transform:translateY(2px)}.logo i,.logo span{display:none}@media(max-width:620px){.logo{width:100px}.logo img{width:150px;height:150px}}
 
 .member-sync-notice{display:flex;align-items:center;gap:14px;padding:16px 20px;margin-bottom:18px;border:1px solid #f0d99e;border-radius:13px;background:#fffaf0;color:#805e13}.member-sync-notice>svg{width:20px;flex:0 0 auto}.member-sync-notice>div{display:flex;flex-direction:column;gap:4px}.member-sync-notice b{font-size:13px}.member-sync-notice span{font-size:11px;color:#8d7441}
+
+.avatar-mini,.avatar-large{overflow:hidden}
+.avatar-mini img,.avatar-large img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
