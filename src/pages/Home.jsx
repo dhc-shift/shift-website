@@ -14,7 +14,7 @@ export default function Home({ setPage, notices = [], activities = [], user, ban
   ];
   const active = banners.filter(b => b.is_active);
   const slides = active.length
-    ? active.map(b => ({ eyebrow: b.eyebrow, line1: b.title_line1, line2: b.title_line2, text: b.description, cta: b.cta_label, link: b.cta_url, art: b.art }))
+    ? active.map(b => ({ eyebrow: b.eyebrow, line1: b.title_line1, line2: b.title_line2, text: b.description, cta: b.cta_label, link: b.cta_url, art: b.art, image: b.image_url }))
     : defaultSlides;
   const go = link => {
     if (!link) return;
@@ -35,7 +35,7 @@ export default function Home({ setPage, notices = [], activities = [], user, ban
         <div className="hero-track" style={{ transform: `translateX(-${slide * 100}%)` }}>
           {slides.map((s, i) => <div className="hero-slide" key={i} aria-hidden={i !== slide}>
             <div className="hero-copy"><span className="eyebrow">{s.eyebrow}</span><h1>{s.line1}{s.line2 && <><br/><em>{s.line2}</em></>}</h1><p>{s.text}</p>{s.cta && <Button onClick={() => go(s.link)}>{s.cta}<ArrowRight size={17}/></Button>}</div>
-            <HeroArt variant={s.art}/>
+            {s.image ? <img className="hero-image" src={s.image} alt=""/> : <HeroArt variant={s.art}/>}
           </div>)}
         </div>
         <button className="slider-arrow left" onClick={() => setSlide((slide + slides.length - 1) % slides.length)} aria-label="이전 배너"><ChevronLeft/></button>

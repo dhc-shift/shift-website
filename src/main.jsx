@@ -59,7 +59,7 @@ function App(){
       setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
       setMemberSummary(summaryRow||null);
       setMileageItems(itemRows||[]);
-      setBanners(bannerRows||[]);
+      setBanners((bannerRows||[]).map(item=>({...item,image_url:item.image_path?supabase.storage.from('posters').getPublicUrl(item.image_path).data.publicUrl:null})));
       setActivities((activityRows||[]).map(item=>({...item,poster_url:item.poster_path?supabase.storage.from('posters').getPublicUrl(item.poster_path).data.publicUrl:null,photos:(item.activity_photos||[]).map(ph=>({...ph,url:supabase.storage.from('posters').getPublicUrl(ph.photo_path).data.publicUrl}))})));
       if(currentUser){
         const [{data:p},{data:stats},{data:history}]=await Promise.all([

@@ -151,11 +151,34 @@ function BannerAdmin({items,refresh,setNotice}){
   const empty={eyebrow:'',title_line1:'',title_line2:'',description:'',cta_label:'',cta_url:'',art:'cube',sort_order:0,is_active:true};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null);
-  const startEdit=item=>{setEditing(item);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active});};
-  const cancelEdit=()=>{setEditing(null);setForm(empty)};
+  const [image,setImage]=useState(null);
+  const [saving,setSaving]=useState(false);
+  const startEdit=item=>{setEditing(item);setImage(null);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active});};
+  const cancelEdit=()=>{setEditing(null);setForm(empty);setImage(null)};
+  const compressImage=async file=>{
+    const bitmap=await createImageBitmap(file);
+    const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    return new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.85));
+  };
   const submit=async e=>{
-    e.preventDefault();
-    const {error}=editing?await supabase.from('banners').update(form).eq('id',editing.id):await supabase.from('banners').insert(form);
+    e.preventDefault();setSaving(true);
+    let image_path=editing?(editing.image_path||''):'';
+    if(image){
+      try{
+        const blob=await compressImage(image);
+        const path=`banners/${Date.now()}.jpg`;
+        const {error:uploadError}=await supabase.storage.from('posters').upload(path,blob,{contentType:'image/jpeg'});
+        if(uploadError){setNotice(uploadError.message);setSaving(false);return}
+        if(editing?.image_path)await supabase.storage.from('posters').remove([editing.image_path]);
+        image_path=path;
+      }catch{setNotice('이미지 처리에 실패했습니다.');setSaving(false);return}
+    }
+    const payload={...form,image_path};
+    const {error}=editing?await supabase.from('banners').update(payload).eq('id',editing.id):await supabase.from('banners').insert(payload);
+    setSaving(false);
     setNotice(error?error.message:editing?'배너가 수정되었습니다.':'배너가 등록되었습니다.');
     if(!error){cancelEdit();refresh();}
   };
@@ -165,6 +188,7 @@ function BannerAdmin({items,refresh,setNotice}){
   };
   const remove=async item=>{
     if(!confirm(`'${item.title_line1}' 배너를 삭제할까요?`))return;
+    if(item.image_path)await supabase.storage.from('posters').remove([item.image_path]);
     const {error}=await supabase.from('banners').delete().eq('id',item.id);
     setNotice(error?error.message:'배너가 삭제되었습니다.');if(editing?.id===item.id)cancelEdit();refresh();
   };
@@ -179,7 +203,8 @@ function BannerAdmin({items,refresh,setNotice}){
     <label>버튼 링크<input value={form.cta_url} onChange={e=>setForm({...form,cta_url:e.target.value})} placeholder="/activities 또는 https://..."/></label>
     <label>정렬 순서 (작을수록 앞)<input type="number" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label>
     <label className="check-label"><input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})}/> 노출</label>
-    <div className="form-actions"><Button>{editing?'수정 저장':'배너 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
+    <label className="wide upload-label"><Upload/>배너 이미지 (선택 — 있으면 배경 그래픽 대신 표시)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setImage(e.target.files[0]||null)}/><span>{image?.name||(editing?.image_path?'기존 이미지 유지 (새 이미지 선택 시 교체)':'이미지를 선택해주세요')}</span></label>
+    <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':'배너 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
   </form>
   <AdminList>{items.map(item=><div className="admin-list-row edit-grid-row" key={item.id}><GalleryHorizontal/><div><b>{item.title_line1}{item.title_line2?` ${item.title_line2}`:''}</b><span>{item.eyebrow||'라벨 없음'} · 순서 {item.sort_order}{item.is_active?'':' · 숨김'}</span></div><button type="button" className={item.is_active?'pin-toggle on':'pin-toggle'} onClick={()=>toggleActive(item)} title={item.is_active?'숨기기':'노출하기'}>{item.is_active?'ON':'OFF'}</button><button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button><button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}
 
