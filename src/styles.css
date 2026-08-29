@@ -118,3 +118,10 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 
 /* 공지 패널로 배너 폭이 줄어든 만큼 제목 크기 보정 */
 @media(min-width:1081px){.hero-with-rail .hero-copy{width:58%;padding-left:64px}.hero-with-rail .hero-copy h1{font-size:44px;letter-spacing:-2.4px}}
+
+/* 공지 상단 고정 토글 */
+.pin-toggle{color:#9aa6b8;transition:color .15s}
+.pin-toggle:hover{color:var(--blue)}
+.pin-toggle.on{color:var(--blue)}
+.pin-toggle.on svg{fill:currentColor}
+.pin-toggle svg{width:16px}
