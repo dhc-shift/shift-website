@@ -13,7 +13,7 @@ export default function AdminPage({ profile, newsletters, events, members, notic
 
 
 function ActivityAdmin({items,roster,refresh,setNotice}){
-  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',access:'public'};
+  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public'};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null); // 수정 중인 활동 (원본 객체)
   const [poster,setPoster]=useState(null);
@@ -22,7 +22,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
   const [pick,setPick]=useState('');
   const startEdit=item=>{
     setEditing(item);setPoster(null);
-    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,access:item.access});
+    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access});
     window.scrollTo({top:0,behavior:'smooth'});
   };
   const cancelEdit=()=>{setEditing(null);setForm(empty);setPoster(null)};
@@ -80,6 +80,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     <label>신청 시작일<input type="date" value={form.apply_start} onChange={e=>setForm({...form,apply_start:e.target.value})}/></label>
     <label>신청 마감일<input type="date" min={form.apply_start||undefined} value={form.apply_end} onChange={e=>setForm({...form,apply_end:e.target.value})}/></label>
     <label>신청 링크 (구글폼 등)<input type="url" value={form.apply_url} onChange={e=>setForm({...form,apply_url:e.target.value})} placeholder="https://forms.gle/..."/></label>
+    <label>신청 방법 안내 (링크가 없을 때 표시)<input value={form.apply_note} onChange={e=>setForm({...form,apply_note:e.target.value})} placeholder="회장에게 카톡으로 연락해주세요"/></label>
     <label>공개 대상<select value={form.access} onChange={e=>setForm({...form,access:e.target.value})}><option value="public">전체 공개</option><option value="member">회원 전용</option></select></label>
     <label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
     <label className="wide upload-label"><Upload/>홍보 포스터 (선택, 5MB 이하)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setPoster(e.target.files[0]||null)}/><span>{poster?.name||(editing?.poster_path?'기존 포스터 유지 (새 이미지를 선택하면 교체)':'이미지를 선택해주세요')}</span></label>

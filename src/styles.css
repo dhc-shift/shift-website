@@ -156,3 +156,8 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 /* 관리자 목록: 수정 버튼 포함 행 정렬 */
 .edit-grid-row{grid-template-columns:36px 1fr auto 38px 38px}
 .notice-grid-row{grid-template-columns:36px 1fr auto 38px 38px 38px}
+
+/* 신청 방법 안내문 (링크 없는 모집) */
+.apply-note{margin-top:6px;padding:13px 16px;border-radius:12px;background:#f2f8ff;border:1px solid #dcebfb;display:flex;flex-direction:column;gap:4px}
+.apply-note b{font-size:13px;color:var(--blue)}
+.apply-note span{font-size:14px}

@@ -35,11 +35,13 @@ export default function Activities({ calendarEvents = [], activities = [], user 
     {selected && <div className="detail-card">{selected.poster_url&&<a className="activity-poster" href={selected.poster_url} target="_blank" rel="noreferrer" title="포스터 크게 보기"><img src={selected.poster_url} alt={`${selected.title} 포스터`}/></a>}<div className="detail-top"><div><Badge tone={typeColor(selected.activity_type)}>{selected.activity_type}</Badge><h2>{selected.title}</h2><p>{selected.description}</p></div><strong>{selected.status==='모집 중'?dday(selected.apply_end):selected.status}</strong></div>
       <div className="detail-info">{[[Users,'대상',selected.target],[CalendarDays,'일정',selected.schedule],[MapPin,'장소',selected.place],[Users,'모집 인원',selected.capacity],[Clock3,'신청 기간',selected.apply_start?`${selected.apply_start} — ${selected.apply_end||''}`:'']].filter(([,,v])=>v).map(([I,k,v])=><div key={k}><I/><span>{k}</span><b>{v}</b></div>)}</div>
       {selected.activity_members?.length>0 && <div className="member-chips"><span className="chips-label">{selected.status==='진행 중'?'현재 작업 중':'참여 부원'}</span>{selected.activity_members.map(m=><span className="member-chip" key={m.id}>{m.member_name}</span>)}</div>}
-      {selected.status==='모집 중' && selected.apply_url
-        ? <a className="button" href={selected.apply_url} target="_blank" rel="noreferrer">신청하러 가기 <ExternalLink size={16}/></a>
-        : selected.status==='모집 중'
-          ? <button className="button" disabled title="신청 방법은 곧 공지됩니다">신청 준비 중</button>
-          : <button className="button" disabled>모집이 마감된 활동입니다</button>}
+      {selected.status!=='모집 중'
+        ? <button className="button" disabled>모집이 마감된 활동입니다</button>
+        : selected.apply_url
+          ? <a className="button" href={selected.apply_url} target="_blank" rel="noreferrer">신청하러 가기 <ExternalLink size={16}/></a>
+          : selected.apply_note
+            ? <div className="apply-note"><b>신청 방법</b><span>{selected.apply_note}</span></div>
+            : <button className="button" disabled title="신청 방법은 곧 공지됩니다">신청 준비 중</button>}
     </div>}
   </section></>;
 }
