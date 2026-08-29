@@ -69,3 +69,6 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 .pm-items .pm-logout{color:#c43d3d}
 .pm-items .pm-logout:hover{background:#fdf1f1}
 @media(max-width:620px){.profile-button>span:nth-child(2){display:none}.profile-menu{right:-8px;width:246px}}
+
+/* 프로필 수정 모달: '사진 선택'은 폼 라벨 grid 규칙에서 제외 */
+.auth-card label.button{display:inline-flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;width:auto;white-space:nowrap;font-size:13px}
