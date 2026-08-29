@@ -147,7 +147,8 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 .modal-visual .badge,.modal-visual h2,.modal-visual p{position:relative;z-index:2;text-shadow:0 1px 8px rgba(0,0,0,.25)}
 
 /* 활동 관리 행: 버튼 3개까지 한 줄 정렬 */
-.activity-grid-row{grid-template-columns:40px 1fr auto 38px 38px 38px 38px}
+.activity-grid-row{grid-template-columns:40px 1fr auto 38px 38px 38px}
+.admin-activity-row:has(.pin-toggle),.activity-grid-row:has(button[title='활동 사진']){grid-template-columns:40px 1fr auto 38px 38px 38px 38px}
 .activity-grid-row .mini-icon{width:40px;height:40px;border-radius:9px}
 .activity-grid-row .mini-icon svg{width:18px}
 .activity-grid-row select{max-width:110px}

@@ -128,10 +128,10 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
       <div><b>{item.title}</b><span>{item.activity_type} · 참여 {item.activity_members?.length||0}명{item.apply_end?` · 마감 ${item.apply_end}`:''}</span></div>
       <select value={item.status} onChange={e=>setStatus(item,e.target.value)}><option>모집 중</option><option>진행 중</option><option>완료</option></select>
       <button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button>
-      <button onClick={()=>setPhotoEdit(photoEdit===item.id?null:item.id)} title="활동 사진" aria-label="활동 사진"><ImageIcon/></button><button onClick={()=>{setMemberEdit(memberEdit===item.id?null:item.id);setPick('')}} title="참여자 관리" aria-label="참여자 관리"><UserPlus/></button>
+      {isArchive&&<button onClick={()=>setPhotoEdit(photoEdit===item.id?null:item.id)} title="활동 사진" aria-label="활동 사진"><ImageIcon/></button>}<button onClick={()=>{setMemberEdit(memberEdit===item.id?null:item.id);setPick('')}} title="참여자 관리" aria-label="참여자 관리"><UserPlus/></button>
       <button onClick={()=>remove(item)}><Trash2/></button>
     </div>
-    {photoEdit===item.id&&<div className="member-editor">
+    {isArchive&&photoEdit===item.id&&<div className="member-editor">
       <div className="photo-grid">{item.photos?.length?item.photos.map(ph=><div className="photo-thumb" key={ph.id}><img src={ph.url} alt=""/><button onClick={()=>removePhoto(ph)} aria-label="사진 삭제"><X size={13}/></button></div>):<span className="chips-label">등록된 사진이 없습니다</span>}</div>
       <label className="button secondary photo-add">{photoBusy?'업로드 중...':'사진 추가 (여러 장 가능)'}<input type="file" accept="image/*" multiple disabled={photoBusy} onChange={e=>{addPhotos(item,[...e.target.files]);e.target.value=''}} style={{display:'none'}}/></label>
     </div>}
