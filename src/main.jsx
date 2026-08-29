@@ -96,7 +96,7 @@ function App(){
   const signOut=async()=>{await supabase.auth.signOut();setUser(null);setProfile(null);navigate('/')};
 
   return <>
-    <Header page={page} setPage={setPage} user={user} profile={profile} signOut={signOut}/>
+    <Header page={page} setPage={setPage} user={user} profile={profile} memberStats={memberStats} signOut={signOut}/>
     {loadError&&<div className="admin-notice container" role="alert">데이터를 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 새로고침해주세요.</div>}
     <main>
       {loading?<div className="board-empty" style={{minHeight:'50vh',justifyContent:'center'}}><p>불러오는 중...</p></div>:

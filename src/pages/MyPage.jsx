@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Bell, ChevronRight, Trophy, Upload, X } from 'lucide-react';
 import { supabase } from '../supabase.js';
 import { ActivityIcon, Badge, Button, SectionHead } from '../components/ui.jsx';
 
 export default function MyPage({setPage,profile,memberStats,refresh}){
-  const [editOpen,setEditOpen]=useState(false);
+  const [searchParams,setSearchParams]=useSearchParams();
+  const [editOpen,setEditOpen]=useState(searchParams.get('edit')==='1');
+  useEffect(()=>{ if(searchParams.get('edit')==='1'){ setEditOpen(true); setSearchParams({},{replace:true}); } },[searchParams]);
   const name=memberStats?.name||profile?.name||'SHIFT 회원';
   return <><section className="profile-hero"><div className="container profile-row"><div className="avatar-large">{profile?.avatar_url?<img src={profile.avatar_url} alt=""/>:name[0]}</div><div><span className="eyebrow">MY SHIFT</span><h1>안녕하세요, <em>{name}님</em></h1><p>{memberStats?`${memberStats.affiliation} · ${memberStats.cohort} · 학번 ${memberStats.student_id}`:(profile?.email||'회원 정보를 불러오는 중입니다.')}</p></div><button className="button secondary" onClick={()=>setEditOpen(true)}>프로필 수정</button></div></section><section className="section container">{!memberStats&&<div className="member-sync-notice"><Bell/><div><b>Google Sheets 회원 정보를 찾지 못했습니다.</b><span>로그인 이메일과 '인원 관리' 시트의 이메일이 정확히 같은지 확인해주세요.</span></div></div>}<div className="my-summary"><div className="my-card points"><span>현재 보유 마일리지</span><strong>{(memberStats?.total_mileage??0).toLocaleString()}<small>P</small></strong><button onClick={()=>setPage('more')}>마일리지 자세히 보기 <ArrowRight/></button></div><div className="my-card grade"><span>현재 등급</span><strong>{memberStats?.current_tier||'미정'}</strong><p>Google Sheets 기준 최신 등급</p></div><div className="my-card active-count"><span>현재 순위</span><strong>{memberStats?.current_rank?`${memberStats.current_rank}위`:'—'}</strong><div className="floating-calendar"><Trophy/></div></div></div><div className="panel participation"><SectionHead eyebrow="MY ACTIVITIES" title="참여 중인 활동" action={<button className="text-link" onClick={()=>setPage('activities')}>전체 보기 <ArrowRight/></button>}/>{[['CareLink 헬스케어 프로젝트','프로젝트','2026.08 — 2026.11','진행 중','blue'],['AWS 클라우드 3기','스터디','2026.09 — 2026.12','모집 완료','mint'],['AI Product Night','세미나','2026.09.19','참여 예정','purple']].map(x=><div className="participation-row" key={x[0]}><div className={`mini-icon ${x[4]}`}><ActivityIcon type={x[1]}/></div><div><b>{x[0]}</b><span>{x[1]} · {x[2]}</span></div><Badge tone={x[4]}>{x[3]}</Badge><ChevronRight/></div>)}</div></section>{editOpen&&<ProfileEditModal profile={profile} refresh={refresh} close={()=>setEditOpen(false)}/>}</>;
 }
