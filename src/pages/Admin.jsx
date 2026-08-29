@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
+import { Archive as ArchiveIcon, Bell, CalendarDays, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
 import { eventTone, typeColor } from '../data.js';
 import { supabase } from '../supabase.js';
 import { ActivityIcon, AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
@@ -8,12 +8,14 @@ export default function AdminPage({ profile, newsletters, events, members, notic
   const [tab,setTab]=useState('activities');
   const [notice,setNotice]=useState('');
   if(profile?.role!=='admin')return <section className="auth-page container"><div className="auth-card"><h1>접근 권한이 없습니다</h1><p>관리자 계정으로 로그인해주세요.</p></div></section>;
-  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>콘텐츠 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav">{[['activities','활동',Lightbulb],['newsletters','뉴스레터',Mail],['events','일정',CalendarDays],['notices','공지사항',Bell],['documents','자료실',FolderArchive],['suggestions','건의함',MessageSquareText],['members','회원 권한',Users]].map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>{setTab(id);setNotice('')}} key={id}><I/>{label}</button>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='activities'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice}/>} {tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
+  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>콘텐츠 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav">{[['activities','활동',Lightbulb],['archive','아카이브',ArchiveIcon],['newsletters','뉴스레터',Mail],['events','일정',CalendarDays],['notices','공지사항',Bell],['documents','자료실',FolderArchive],['suggestions','건의함',MessageSquareText],['members','회원 권한',Users]].map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>{setTab(id);setNotice('')}} key={id}><I/>{label}</button>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='activities'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode="active"/>} {tab==='archive'&&<ActivityAdmin items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode="archive"/>} {tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
 }
 
 
-function ActivityAdmin({items,roster,refresh,setNotice}){
-  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public',status:'모집 중'};
+function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
+  const isArchive=mode==='archive';
+  const list=items.filter(i=>isArchive?i.status==='완료':i.status!=='완료');
+  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public',status:isArchive?'완료':'모집 중',result_note:''};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null); // 수정 중인 활동 (원본 객체)
   const [poster,setPoster]=useState(null);
@@ -24,7 +26,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
   const [photoBusy,setPhotoBusy]=useState(false);
   const startEdit=item=>{
     setEditing(item);setPoster(null);
-    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access,status:item.status});
+    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access,status:item.status,result_note:item.result_note||''});
     window.scrollTo({top:0,behavior:'smooth'});
   };
   const cancelEdit=()=>{setEditing(null);setForm(empty);setPoster(null)};
@@ -101,7 +103,7 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     const {error}=await supabase.from('activity_photos').delete().eq('id',ph.id);
     setNotice(error?error.message:'사진이 삭제되었습니다.');refresh();
   };
-  return <><SectionHead eyebrow="ACTIVITIES" title={editing?`활동 수정 — ${editing.title}`:'활동 관리'} text="활동을 등록하고 참여 부원을 지정합니다. '완료' 처리하면 참여자 이름과 함께 아카이브에 표시됩니다."/>
+  return <><SectionHead eyebrow={isArchive?'ARCHIVE':'ACTIVITIES'} title={editing?`${isArchive?'아카이브':'활동'} 수정 — ${editing.title}`:isArchive?'아카이브 관리':'활동 관리'} text={isArchive?'완료된 활동 기록을 등록·관리합니다. 참여 부원과 활동 사진을 붙이면 아카이브 페이지에 표시됩니다.':"진행할 활동을 등록하고 참여 부원을 지정합니다. 상태를 '완료'로 바꾸면 아카이브 탭으로 이동합니다."}/>
   <form className="admin-form" onSubmit={submit}>
     <label>활동명<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
     <label>유형<select value={form.activity_type} onChange={e=>setForm({...form,activity_type:e.target.value})}>{['프로젝트','스터디','세미나','행사'].map(x=><option key={x}>{x}</option>)}</select></label>
@@ -109,17 +111,18 @@ function ActivityAdmin({items,roster,refresh,setNotice}){
     <label>모집 인원<input value={form.capacity} onChange={e=>setForm({...form,capacity:e.target.value})} placeholder="12명"/></label>
     <label>일정<input value={form.schedule} onChange={e=>setForm({...form,schedule:e.target.value})} placeholder="2026.09 — 2026.11 (매주 화)"/></label>
     <label>장소<input value={form.place} onChange={e=>setForm({...form,place:e.target.value})}/></label>
-    <label>신청 시작일<input type="date" value={form.apply_start} onChange={e=>setForm({...form,apply_start:e.target.value})}/></label>
+    {!isArchive&&<><label>신청 시작일<input type="date" value={form.apply_start} onChange={e=>setForm({...form,apply_start:e.target.value})}/></label>
     <label>신청 마감일<input type="date" min={form.apply_start||undefined} value={form.apply_end} onChange={e=>setForm({...form,apply_end:e.target.value})}/></label>
     <label>신청 링크 (구글폼 등)<input type="url" value={form.apply_url} onChange={e=>setForm({...form,apply_url:e.target.value})} placeholder="https://forms.gle/..."/></label>
-    <label>신청 방법 안내 (링크가 없을 때 표시)<input value={form.apply_note} onChange={e=>setForm({...form,apply_note:e.target.value})} placeholder="회장에게 카톡으로 연락해주세요"/></label>
+    <label>신청 방법 안내 (링크가 없을 때 표시)<input value={form.apply_note} onChange={e=>setForm({...form,apply_note:e.target.value})} placeholder="회장에게 카톡으로 연락해주세요"/></label></>}
+    {isArchive&&<label className="wide">활동 결과 요약<input value={form.result_note} onChange={e=>setForm({...form,result_note:e.target.value})} placeholder="최종 결과물 발표와 회고 완료"/></label>}
     <label>공개 대상<select value={form.access} onChange={e=>setForm({...form,access:e.target.value})}><option value="public">전체 공개</option><option value="member">회원 전용</option></select></label>
-    <label>상태<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>모집 중</option><option>진행 중</option><option>완료</option></select></label>
+    {!isArchive&&<label>상태<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>모집 중</option><option>진행 중</option></select></label>}
     <label className="wide">설명<textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
     <label className="wide upload-label"><Upload/>홍보 포스터 (선택, 5MB 이하)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setPoster(e.target.files[0]||null)}/><span>{poster?.name||(editing?.poster_path?'기존 포스터 유지 (새 이미지를 선택하면 교체)':'이미지를 선택해주세요')}</span></label>
-    <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':'활동 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
+    <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':isArchive?'아카이브 등록':'활동 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
   </form>
-  <AdminList>{items.map(item=><div className="admin-activity-row" key={item.id}>
+  <AdminList>{list.map(item=><div className="admin-activity-row" key={item.id}>
     <div className="admin-list-row activity-grid-row">
       <div className={`mini-icon ${typeColor(item.activity_type)}`}><ActivityIcon type={item.activity_type}/></div>
       <div><b>{item.title}</b><span>{item.activity_type} · 참여 {item.activity_members?.length||0}명{item.apply_end?` · 마감 ${item.apply_end}`:''}</span></div>
