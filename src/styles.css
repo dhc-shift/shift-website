@@ -95,3 +95,26 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 
 /* 모바일: 활동 페이지에서 '모집 중인 활동'을 달력보다 위로 */
 @media(max-width:900px){.recruit-panel{order:-1}}
+
+/* 홈: 히어로 우측 공지 패널 */
+.hero-with-rail{display:grid;grid-template-columns:1fr 330px;gap:18px;align-items:stretch}
+.hero-with-rail .hero-panel{min-width:0}
+.notice-rail{height:520px;background:#fff;border:1px solid var(--line);border-radius:24px;padding:22px 20px;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.notice-rail-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.notice-rail-head h2{font-size:19px;margin:0 auto 0 0}
+.notice-rail-head .eyebrow{width:100%}
+.notice-rail-list{display:flex;flex-direction:column;overflow-y:auto;margin:0 -6px}
+.notice-rail-list>button{text-align:left;padding:11px 6px;border-radius:11px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--soft);transition:background .15s}
+.notice-rail-list>button:hover{background:var(--soft)}
+.notice-rail-list>button:last-child{border-bottom:none}
+.notice-rail-top{display:flex;align-items:center;justify-content:space-between;width:100%}
+.notice-rail-top time{font-size:12px;color:var(--muted)}
+.notice-rail-list strong{font-size:14px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.notice-rail-empty{margin:auto;text-align:center;color:var(--muted)}
+.notice-rail-empty b{display:block;color:var(--ink);margin-bottom:6px;font-size:14px}
+.notice-rail-empty span{font-size:13px}
+@media(max-width:1080px){.hero-with-rail{grid-template-columns:1fr}.notice-rail{height:auto;max-height:340px}}
+@media(max-width:620px){.hero-with-rail .hero-panel{height:540px}}
+
+/* 공지 패널로 배너 폭이 줄어든 만큼 제목 크기 보정 */
+@media(min-width:1081px){.hero-with-rail .hero-copy{width:58%;padding-left:64px}.hero-with-rail .hero-copy h1{font-size:44px;letter-spacing:-2.4px}}

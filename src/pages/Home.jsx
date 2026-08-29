@@ -16,9 +16,9 @@ export default function Home({ setPage, notices = [] }) {
     const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5500);
     return () => clearInterval(t);
   }, [paused]);
-  const recentNotices = notices.slice(0, 4);
+  const recentNotices = notices.slice(0, 5);
   return <>
-    <section className="hero container">
+    <section className="hero container hero-with-rail">
       <div className="hero-panel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <div className="hero-track" style={{ transform: `translateX(-${slide * 100}%)` }}>
           {slides.map((s, i) => <div className="hero-slide" key={i} aria-hidden={i !== slide}>
@@ -30,18 +30,21 @@ export default function Home({ setPage, notices = [] }) {
         <button className="slider-arrow right" onClick={() => setSlide((slide + 1) % slides.length)} aria-label="다음 배너"><ChevronRight/></button>
         <div className="slider-dots">{slides.map((_, i) => <button key={i} className={i === slide ? 'on' : ''} onClick={() => setSlide(i)} aria-label={`배너 ${i + 1}`}/>)}</div>
       </div>
+      <aside className="notice-rail">
+        <div className="notice-rail-head"><span className="eyebrow">NOTICE</span><h2>공지사항</h2><button className="text-link" onClick={() => setPage('board')}>전체 보기 <ArrowRight size={14}/></button></div>
+        <div className="notice-rail-list">
+          {recentNotices.length
+            ? recentNotices.map(n => <button key={n.id} onClick={() => setPage('board')}>
+                <div className="notice-rail-top"><Badge tone={n.is_pinned ? 'blue' : 'gray'}>{n.is_pinned ? '필독' : '공지'}</Badge><time>{n.published_at}</time></div>
+                <strong>{n.title}</strong>
+              </button>)
+            : <div className="notice-rail-empty"><b>등록된 공지가 없습니다</b><span>새 소식이 올라오면 여기에 표시돼요.</span></div>}
+        </div>
+      </aside>
     </section>
     <section className="section container">
       <SectionHead eyebrow="NOW OPEN" title="지금, 함께할 수 있는 활동" text="관심 있는 활동을 발견하고 새로운 동료를 만나보세요." action={<button className="text-link" onClick={() => setPage('activities')}>전체 보기 <ArrowRight size={15}/></button>}/>
       <div className="activity-grid">{activityData.map(a => <ActivityCard key={a.id} item={a} onClick={() => setPage('activities')}/>)}</div>
     </section>
-    <section className="section notices-section"><div className="container">
-      <SectionHead eyebrow="NOTICE" title="SHIFT의 새로운 소식" action={<button className="text-link" onClick={() => setPage('board')}>전체 보기 <ArrowRight size={15}/></button>}/>
-      <div className="notice-list">
-        {recentNotices.length
-          ? recentNotices.map(n => <button key={n.id} onClick={() => setPage('board')}><Badge tone={n.is_pinned ? 'blue' : 'gray'}>{n.is_pinned ? '필독' : '공지'}</Badge><strong>{n.title}</strong><time>{n.published_at}</time><ChevronRight size={17}/></button>)
-          : <button onClick={() => setPage('board')}><Badge tone="gray">안내</Badge><strong>등록된 소식이 아직 없습니다</strong><time/><ChevronRight size={17}/></button>}
-      </div>
-    </div></section>
   </>;
 }
