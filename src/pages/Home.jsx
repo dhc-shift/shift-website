@@ -10,17 +10,25 @@ export default function Home({ setPage, notices = [] }) {
     { eyebrow: 'SHIFT CONNECT', title: <>배움과 경험이 만나는<br/><em>커뮤니티의 하루</em></>, text: '9월, SHIFT 네트워킹 데이에 초대합니다.', cta: '행사 확인하기', art: 'network' }
   ];
   const [slide, setSlide] = useState(0);
-  useEffect(() => { const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5500); return () => clearInterval(t); }, []);
-  const s = slides[slide];
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 5500);
+    return () => clearInterval(t);
+  }, [paused]);
   const recentNotices = notices.slice(0, 4);
   return <>
     <section className="hero container">
-      <div className="hero-panel">
-        <div className="hero-copy"><span className="eyebrow">{s.eyebrow}</span><h1>{s.title}</h1><p>{s.text}</p><Button onClick={() => setPage(slide === 1 ? 'activities' : slide === 2 ? 'activities' : 'more')}>{s.cta}<ArrowRight size={17}/></Button></div>
-        <HeroArt variant={s.art}/>
-        <button className="slider-arrow left" onClick={() => setSlide((slide + slides.length - 1) % slides.length)}><ChevronLeft/></button>
-        <button className="slider-arrow right" onClick={() => setSlide((slide + 1) % slides.length)}><ChevronRight/></button>
-        <div className="slider-dots">{slides.map((_, i) => <button key={i} className={i === slide ? 'on' : ''} onClick={() => setSlide(i)}/>)}</div>
+      <div className="hero-panel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+        <div className="hero-track" style={{ transform: `translateX(-${slide * 100}%)` }}>
+          {slides.map((s, i) => <div className="hero-slide" key={i} aria-hidden={i !== slide}>
+            <div className="hero-copy"><span className="eyebrow">{s.eyebrow}</span><h1>{s.title}</h1><p>{s.text}</p><Button onClick={() => setPage(i === 0 ? 'more' : 'activities')}>{s.cta}<ArrowRight size={17}/></Button></div>
+            <HeroArt variant={s.art}/>
+          </div>)}
+        </div>
+        <button className="slider-arrow left" onClick={() => setSlide((slide + slides.length - 1) % slides.length)} aria-label="이전 배너"><ChevronLeft/></button>
+        <button className="slider-arrow right" onClick={() => setSlide((slide + 1) % slides.length)} aria-label="다음 배너"><ChevronRight/></button>
+        <div className="slider-dots">{slides.map((_, i) => <button key={i} className={i === slide ? 'on' : ''} onClick={() => setSlide(i)} aria-label={`배너 ${i + 1}`}/>)}</div>
       </div>
     </section>
     <section className="section container">

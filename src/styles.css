@@ -37,3 +37,9 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 
 .avatar-mini,.avatar-large{overflow:hidden}
 .avatar-mini img,.avatar-large img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+
+/* 히어로 슬라이더: 가로로 매끄럽게 밀리는 트랙 */
+.hero-track{position:absolute;inset:0;display:flex;transition:transform .75s cubic-bezier(.22,.61,.36,1);z-index:1}
+.hero-slide{flex:0 0 100%;position:relative;display:flex;align-items:center;height:100%}
+@media(max-width:620px){.hero-slide{align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){.hero-track{transition:none}}
