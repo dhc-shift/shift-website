@@ -148,12 +148,12 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
   </div>)}</AdminList></>}
 
 function BannerAdmin({items,refresh,setNotice}){
-  const empty={eyebrow:'',title_line1:'',title_line2:'',description:'',cta_label:'',cta_url:'',art:'cube',sort_order:0,is_active:true};
+  const empty={eyebrow:'',title_line1:'',title_line2:'',description:'',cta_label:'',cta_url:'',art:'cube',sort_order:0,is_active:true,text_overlay:false};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null);
   const [image,setImage]=useState(null);
   const [saving,setSaving]=useState(false);
-  const startEdit=item=>{setEditing(item);setImage(null);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active});};
+  const startEdit=item=>{setEditing(item);setImage(null);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active,text_overlay:item.text_overlay??false});};
   const cancelEdit=()=>{setEditing(null);setForm(empty);setImage(null)};
   const compressImage=async file=>{
     const bitmap=await createImageBitmap(file);
@@ -203,6 +203,7 @@ function BannerAdmin({items,refresh,setNotice}){
     <label>버튼 링크<input value={form.cta_url} onChange={e=>setForm({...form,cta_url:e.target.value})} placeholder="/activities 또는 https://..."/></label>
     <label>정렬 순서 (작을수록 앞)<input type="number" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label>
     <label className="check-label"><input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})}/> 노출</label>
+    <label className="check-label wide"><input type="checkbox" checked={form.text_overlay} onChange={e=>setForm({...form,text_overlay:e.target.checked})}/> 글자 가독성 배경 사용 <span className="field-help">사진 위 왼쪽에 부드러운 반투명 그라데이션을 적용합니다.</span></label>
     <label className="wide upload-label"><Upload/>배너 이미지 (선택 — 있으면 배경 그래픽 대신 표시)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setImage(e.target.files[0]||null)}/><span>{image?.name||(editing?.image_path?'기존 이미지 유지 (새 이미지 선택 시 교체)':'이미지를 선택해주세요')}</span></label>
     <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':'배너 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
   </form>
