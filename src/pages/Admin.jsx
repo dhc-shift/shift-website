@@ -15,7 +15,7 @@ export default function AdminPage({ profile, newsletters, events, members, notic
 function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
   const isArchive=mode==='archive';
   const list=items.filter(i=>isArchive?i.status==='완료':i.status!=='완료');
-  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public',status:isArchive?'완료':'모집 중',result_note:''};
+  const empty={title:'',activity_type:'프로젝트',description:'',target:'',schedule:'',start_date:'',place:'',capacity:'',apply_start:'',apply_end:'',apply_url:'',apply_note:'',access:'public',status:isArchive?'완료':'모집 중',result_note:''};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null); // 수정 중인 활동 (원본 객체)
   const [poster,setPoster]=useState(null);
@@ -26,7 +26,7 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
   const [photoBusy,setPhotoBusy]=useState(false);
   const startEdit=item=>{
     setEditing(item);setPoster(null);
-    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access,status:item.status,result_note:item.result_note||''});
+    setForm({title:item.title,activity_type:item.activity_type,description:item.description,target:item.target,schedule:item.schedule,start_date:item.start_date||'',place:item.place,capacity:item.capacity,apply_start:item.apply_start||'',apply_end:item.apply_end||'',apply_url:item.apply_url,apply_note:item.apply_note||'',access:item.access,status:item.status,result_note:item.result_note||''});
     window.scrollTo({top:0,behavior:'smooth'});
   };
   const cancelEdit=()=>{setEditing(null);setForm(empty);setPoster(null)};
@@ -40,7 +40,7 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
       if(editing?.poster_path)await supabase.storage.from('posters').remove([editing.poster_path]);
       poster_path=safeName;
     }
-    const payload={...form,poster_path,apply_start:form.apply_start||null,apply_end:form.apply_end||null};
+    const payload={...form,poster_path,start_date:form.start_date||null,apply_start:form.apply_start||null,apply_end:form.apply_end||null};
     const {error}=editing
       ?await supabase.from('activities').update(payload).eq('id',editing.id)
       :await supabase.from('activities').insert(payload);
@@ -110,6 +110,7 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
     <label>대상<input value={form.target} onChange={e=>setForm({...form,target:e.target.value})} placeholder="SHIFT 회원 및 대학생"/></label>
     <label>모집 인원<input value={form.capacity} onChange={e=>setForm({...form,capacity:e.target.value})} placeholder="12명"/></label>
     <label>일정<input value={form.schedule} onChange={e=>setForm({...form,schedule:e.target.value})} placeholder="2026.09 — 2026.11 (매주 화)"/></label>
+    {!isArchive&&<label>시작일 (D-Day 기준)<input type="date" value={form.start_date} onChange={e=>setForm({...form,start_date:e.target.value})}/></label>}
     <label>장소<input value={form.place} onChange={e=>setForm({...form,place:e.target.value})}/></label>
     {!isArchive&&<><label>신청 시작일<input type="date" value={form.apply_start} onChange={e=>setForm({...form,apply_start:e.target.value})}/></label>
     <label>신청 마감일<input type="date" min={form.apply_start||undefined} value={form.apply_end} onChange={e=>setForm({...form,apply_end:e.target.value})}/></label>

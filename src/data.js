@@ -20,13 +20,13 @@ export const RECRUIT_SITE_URL = 'https://dhc-shift.github.io';
 
 export const eventTone = type => ({프로젝트:'blue',스터디:'mint',세미나:'purple',행사:'lime'}[type] || 'blue');
 
-// 신청 마감일 기준 D-day 문자열
-export const dday = applyEnd => {
-  if (!applyEnd) return '';
+// 활동 시작일 기준 D-day 문자열 (시작일이 지나면 표시하지 않음)
+export const dday = startDate => {
+  if (!startDate) return '';
   const today = new Date(); today.setHours(0,0,0,0);
-  const end = new Date(`${applyEnd}T00:00:00`);
-  const diff = Math.round((end - today) / 86400000);
-  return diff < 0 ? '마감' : diff === 0 ? 'D-DAY' : `D-${diff}`;
+  const start = new Date(`${startDate}T00:00:00`);
+  const diff = Math.round((start - today) / 86400000);
+  return diff < 0 ? '' : diff === 0 ? 'D-DAY' : `D-${diff}`;
 };
 
 export const typeColor = type => ({프로젝트:'blue',스터디:'mint',세미나:'purple',행사:'yellow'}[type] || 'blue');

@@ -6,7 +6,7 @@ import { CalendarDays, Lock } from 'lucide-react';
 
 export default function Home({ setPage, notices = [], activities = [], user, banners = [] }) {
   const openActivities = activities.filter(a => a.status !== '완료' && (a.access === 'public' || user)).slice(0, 4)
-    .map(a => ({ id: a.id, type: a.activity_type, title: a.title, desc: a.description, period: a.schedule, dday: a.status === '모집 중' ? dday(a.apply_end) : a.status, color: typeColor(a.activity_type) }));
+    .map(a => ({ id: a.id, type: a.activity_type, title: a.title, desc: a.description, period: a.schedule, dday: a.status === '모집 중' ? dday(a.start_date) : a.status, color: typeColor(a.activity_type) }));
   const defaultSlides = [
     { eyebrow: '2026 SECOND HALF', line1: '새로운 가능성은', line2: '함께할 때 시작돼요', text: 'SHIFT 2기 신입부원을 모집합니다.', cta: '모집 자세히 보기', link: '/more', art: 'cube' },
     { eyebrow: 'BUILD WITH SHIFT', line1: '아이디어를 세상에', line2: '실행으로 옮겨보세요', text: '2026 신규 프로젝트 팀 빌딩이 시작됩니다.', cta: '프로젝트 둘러보기', link: '/activities', art: 'rings' },
