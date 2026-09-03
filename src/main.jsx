@@ -14,6 +14,7 @@ import More from './pages/More.jsx';
 import MyPage from './pages/MyPage.jsx';
 import LoginPage, { UpdatePasswordPage } from './pages/LoginPage.jsx';
 import AdminPage from './pages/Admin.jsx';
+import DocumentViewer from './pages/DocumentViewer.jsx';
 
 function App(){
   const navigate = useNavigate();
@@ -114,6 +115,7 @@ function App(){
         <Route path="/activities" element={<Activities calendarEvents={events} user={user} activities={activities} setPage={setPage}/>}/>
         <Route path="/archive" element={<Archive activities={activities}/>}/>
         <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
+        <Route path="/documents/:documentId" element={<DocumentViewer documents={documents}/>}/>
         <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>
         <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} activities={activities} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
