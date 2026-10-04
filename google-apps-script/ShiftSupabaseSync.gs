@@ -51,6 +51,7 @@ function syncAllToSupabase() {
       updated_at: new Date().toISOString()
     }));
 
+    const currentStudentIds = new Set(memberRows.map(row => row.student_id));
     const historyRows = history.map(row => ({
       record_id: String(value_(row, '기록ID')).trim(),
       activity_date: dateString_(value_(row, '날짜')),
@@ -62,7 +63,7 @@ function syncAllToSupabase() {
       notes: String(value_(row, '비고') || '').trim(),
       entered_by: String(value_(row, '입력자') || '').trim(),
       sync_token: token
-    })).filter(row => row.activity_date && row.student_id);
+    })).filter(row => row.activity_date && currentStudentIds.has(row.student_id));
 
     // 안전장치: 부원 명단이 비어 있으면 동기화 전체 중단.
     // (시트가 실수로 비워지거나 헤더가 깨졌을 때 DB 전체 삭제 + 가입 제한 해제를 막는다)
@@ -70,18 +71,8 @@ function syncAllToSupabase() {
       throw new Error('인원 관리 시트에서 부원 데이터를 찾지 못해 동기화를 중단합니다. 시트 상태를 확인해주세요.');
     }
 
-    upsertInChunks_('member_stats', memberRows, 'student_id');
-    upsertInChunks_('mileage_items', itemRows, 'activity_name');
-    upsertInChunks_('mileage_history', historyRows, 'record_id');
-    deleteStale_('mileage_history', token);
-    deleteStale_('mileage_items', token);
-    deleteStale_('member_stats', token);
+    assertUniqueMemberEmails_(memberRows);
 
-    const totalMileage = memberRows.reduce((sum, row) => sum + row.total_mileage, 0);
-    const tierCounts = memberRows.reduce((result, row) => {
-      result[row.current_tier || '미정'] = (result[row.current_tier || '미정'] || 0) + 1;
-      return result;
-    }, {});
     const topThree = dashboard.map(row => ({
       rank: rankNumber_(value_(row, '순위')),
       name: String(value_(row, '이름') || '').trim(),
@@ -100,6 +91,20 @@ function syncAllToSupabase() {
       );
     }
 
+    removeStaleEmailOwners_(memberRows);
+    upsertInChunks_('member_stats', memberRows, 'student_id');
+    upsertInChunks_('mileage_items', itemRows, 'activity_name');
+    upsertInChunks_('mileage_history', historyRows, 'record_id');
+    deleteStale_('mileage_history', token);
+    deleteStale_('mileage_items', token);
+    deleteStale_('member_stats', token);
+
+    const totalMileage = memberRows.reduce((sum, row) => sum + row.total_mileage, 0);
+    const tierCounts = memberRows.reduce((result, row) => {
+      result[row.current_tier || '미정'] = (result[row.current_tier || '미정'] || 0) + 1;
+      return result;
+    }, {});
+
     upsert_('public_member_summary', [{
       id: 1,
       member_count: memberRows.length,
@@ -114,6 +119,72 @@ function syncAllToSupabase() {
     console.log(`SHIFT 동기화 완료: 회원 ${memberRows.length}명, 기록 ${historyRows.length}건`);
   } finally {
     lock.releaseLock();
+  }
+}
+
+function assertUniqueMemberEmails_(memberRows) {
+  const memberByEmail = new Map();
+  const duplicates = [];
+
+  memberRows.forEach(row => {
+    const email = row.email.trim().toLowerCase();
+    const existing = memberByEmail.get(email);
+    if (existing) {
+      duplicates.push(`${existing.student_id} (${existing.name}), ${row.student_id} (${row.name})`);
+    } else {
+      memberByEmail.set(email, row);
+    }
+  });
+
+  if (duplicates.length) {
+    throw new Error(
+      `인원 관리 시트에서 이메일이 중복됩니다. 각 부원에게 서로 다른 이메일을 지정해주세요: ` +
+      duplicates.join('; ')
+    );
+  }
+}
+
+function removeStaleEmailOwners_(memberRows) {
+  const currentStudentIds = new Set(memberRows.map(row => row.student_id));
+  const currentMemberByEmail = new Map(memberRows.map(row => [row.email.toLowerCase(), row]));
+  const emails = [...currentMemberByEmail.keys()];
+  const staleStudentIds = new Set();
+  const currentConflicts = [];
+
+  for (let index = 0; index < emails.length; index += 100) {
+    const emailFilter = `in.(${emails.slice(index, index + 100).map(email => JSON.stringify(email)).join(',')})`;
+    const path = `member_stats?select=student_id,email&email=${encodeURIComponent(emailFilter)}`;
+    const existingRows = JSON.parse(request_(path, 'get', null).getContentText() || '[]');
+
+    existingRows.forEach(existing => {
+      const member = currentMemberByEmail.get(String(existing.email).toLowerCase());
+      if (!member || existing.student_id === member.student_id) return;
+      if (currentStudentIds.has(existing.student_id)) {
+        currentConflicts.push(`${member.student_id} (${member.name}) conflicts with ${existing.student_id}`);
+      } else {
+        staleStudentIds.add(existing.student_id);
+      }
+    });
+  }
+
+  if (currentConflicts.length) {
+    throw new Error(
+      `Supabase의 현재 회원 데이터와 인원 관리 시트에서 이메일 소유자가 다릅니다. ` +
+      `활동 중인 회원의 학번/이메일을 확인해주세요: ${currentConflicts.join('; ')}`
+    );
+  }
+
+  staleStudentIds.forEach(studentId => {
+    request_(`member_stats?student_id=eq.${encodeURIComponent(studentId)}`, 'delete', null, {
+      Prefer: 'return=minimal'
+    });
+  });
+
+  if (staleStudentIds.size) {
+    console.warn(
+      `인원 관리 시트에 없는 기존 회원 ${staleStudentIds.size}명을 정리했습니다. ` +
+      '해당 회원의 마일리지 기록도 DB 외래 키 설정에 따라 함께 삭제됩니다.'
+    );
   }
 }
 
