@@ -12,7 +12,8 @@
 const SHIFT_SHEETS = {
   MEMBERS: '인원 관리',
   ITEMS: '마일리지 항목',
-  HISTORY: '활동 기록 DB'
+  HISTORY: '활동 기록 DB',
+  DASHBOARD: '대시보드'
 };
 
 function syncAllToSupabase() {
@@ -23,6 +24,7 @@ function syncAllToSupabase() {
     const members = readSheetObjects_(SHIFT_SHEETS.MEMBERS).filter(row => value_(row, '학번'));
     const items = readSheetObjects_(SHIFT_SHEETS.ITEMS).filter(row => value_(row, '활동항목'));
     const history = readSheetObjects_(SHIFT_SHEETS.HISTORY).filter(row => value_(row, '기록ID'));
+    const dashboard = readSheetObjects_(SHIFT_SHEETS.DASHBOARD);
 
     const memberRows = members.map(row => ({
       student_id: String(value_(row, '학번')).trim(),
@@ -80,9 +82,23 @@ function syncAllToSupabase() {
       result[row.current_tier || '미정'] = (result[row.current_tier || '미정'] || 0) + 1;
       return result;
     }, {});
-    const topThree = memberRows
-      .slice().sort((a, b) => b.total_mileage - a.total_mileage).slice(0, 3)
-      .map(row => ({ name: row.name, mileage: row.total_mileage, tier: row.current_tier }));
+    const topThree = dashboard.map(row => ({
+      rank: rankNumber_(value_(row, '순위')),
+      name: String(value_(row, '이름') || '').trim(),
+      mileage: number_(value_(row, '마일리지')),
+      tier: String(value_(row, '등급') || '').trim()
+    }))
+      .filter(row => row.rank !== null && row.rank >= 1 && row.rank <= 3 && row.name)
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, 3)
+      .map(({ name, mileage, tier }) => ({ name, mileage, tier }));
+
+    if (!topThree.length) {
+      throw new Error(
+        `대시보드 시트에서 TOP 3 데이터를 찾지 못했습니다. ` +
+        `순위, 이름, 마일리지, 등급 열과 순위 1~3 데이터를 확인해주세요.`
+      );
+    }
 
     upsert_('public_member_summary', [{
       id: 1,
@@ -125,7 +141,8 @@ function readSheetObjects_(sheetName) {
   const requiredHeaders = {
     '인원 관리': ['학번', '이름', '이메일'],
     '마일리지 항목': ['활동항목', '기본점수'],
-    '활동 기록 DB': ['기록ID', '학번', '최종점수']
+    '활동 기록 DB': ['기록ID', '학번', '최종점수'],
+    '대시보드': ['순위', '이름', '마일리지', '등급']
   }[sheetName] || [];
 
   const searchLimit = Math.min(values.length, 30);
@@ -161,6 +178,11 @@ function normalizeHeader_(value) {
 }
 function value_(row, header) { return row[normalizeHeader_(header)]; }
 function number_(value) { const parsed = Number(String(value ?? 0).replace(/,/g, '')); return Number.isFinite(parsed) ? parsed : 0; }
+function rankNumber_(value) {
+  if (value === '' || value == null) return null;
+  const match = String(value).match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
 function nullableNumber_(value) { return value === '' || value == null ? null : number_(value); }
 function dateString_(value) {
   if (!value) return null;

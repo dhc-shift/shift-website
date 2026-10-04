@@ -88,6 +88,7 @@ google-apps-script/     시트 동기화 백업본 (원본은 시트의 Apps Scr
 
 - 시트 수정 → **최대 5분 후** DB 반영 → 웹은 새로고침 시 표시
 - 트리거 설치(1회): 시트 → 확장 프로그램 → Apps Script → `installShiftSyncTrigger` 실행
+- 마일리지 페이지 TOP 3는 `대시보드` 시트의 `순위`, `이름`, `마일리지`, `등급` 열을 읽습니다. 이 열 머리글과 순위 1~3 데이터가 있어야 합니다.
 - 안전장치: '인원 관리' 시트가 비어 있으면 동기화가 중단됩니다 (전체 삭제 방지)
 - `google-apps-script/ShiftSupabaseSync.gs`는 백업본 — **수정하면 시트의 Apps Script에도 붙여넣어야 반영**
 
