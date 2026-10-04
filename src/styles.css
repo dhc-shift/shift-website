@@ -123,6 +123,8 @@ body{font-size:16px}.eyebrow{font-size:12px}.badge{font-size:11px}.button,.text-
 .pin-toggle{color:#9aa6b8;transition:color .15s}
 .pin-toggle:hover{color:var(--blue)}
 .pin-toggle.on{color:var(--blue)}
+
+.mileage-history .section-head .eyebrow{color:var(--mint)}
 .pin-toggle.on svg{fill:currentColor}
 .pin-toggle svg{width:16px}
 
