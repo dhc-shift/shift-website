@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BookOpen, CalendarDays, ChevronLeft, FolderArchive, GraduationCap,
+  BookOpen, CalendarDays, FolderArchive, GraduationCap,
   Lightbulb, Sparkles, Users
 } from 'lucide-react';
 
@@ -17,7 +17,7 @@ export function HeroArt({ variant }) { return <div className={`hero-art ${varian
 export function ActivityCard({ item, onClick }) { return <button className="activity-card" onClick={onClick}><div className={`activity-icon ${item.color}`}><ActivityIcon type={item.type}/></div><div className="activity-top"><Badge tone={item.color}>{item.type}</Badge><strong className="dday">{item.dday}</strong></div><h3>{item.title}</h3><p>{item.desc}</p>{item.period && <div className="card-meta"><CalendarDays size={15}/>{item.period}</div>}</button>; }
 export function ActivityIcon({ type }) { return type === '프로젝트' ? <Lightbulb/> : type === '스터디' ? <BookOpen/> : type === '세미나' ? <GraduationCap/> : <Users/>; }
 
-export function SubHeader({title,back}){return <div className="sub-header container"><button onClick={back}><ChevronLeft/> 더보기</button><h1>{title}</h1></div>}
+export function SubHeader({title}){return <div className="sub-header container"><h1>{title}</h1></div>}
 export function CoinArt(){return <div className="coin-art"><i/><i/><b>P</b><span>+120</span></div>}
 export function PeopleArt(){return <div className="people-art"><Users/><i/><i/><span>+</span></div>}
 export function AdminList({children}){return <div className="admin-list">{children?.length?children:<div className="board-empty"><FolderArchive/><p>등록된 데이터가 없습니다.</p></div>}</div>}

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
-import { CONTACT_EMAIL, GITHUB_ORG_URL, navItems } from '../data.js';
+import { CONTACT_EMAIL, GITHUB_ORG_URL, menuGroups } from '../data.js';
 import { Logo } from './ui.jsx';
 
 export default function Footer({setPage}){
   return <footer><div className="container footer-main">
     <div><Logo onClick={()=>setPage('home')}/><p>Ideas shift.<br/>Impact together.</p></div>
-    <div className="footer-links">{navItems.map(([id,label])=><button onClick={()=>setPage(id)} key={id}>{label}</button>)}</div>
+    <div className="footer-links">{menuGroups.map(g=><div className="footer-group" key={g.label}><h4>{g.label}</h4>{g.items.map(item=><button onClick={()=>setPage(item.to)} key={item.to}>{item.label}</button>)}</div>)}</div>
     <div className="footer-contact">
       <b>Contact</b>
       <a href={`mailto:${CONTACT_EMAIL}`}><Mail size={15}/>{CONTACT_EMAIL}</a>

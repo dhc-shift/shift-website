@@ -8,7 +8,7 @@ export default function Home({ setPage, notices = [], activities = [], user, ban
   const openActivities = activities.filter(a => a.status !== '완료' && (a.access === 'public' || user)).slice(0, 4)
     .map(a => ({ id: a.id, type: a.activity_type, title: a.title, desc: a.description, period: a.schedule, dday: a.status === '모집 중' ? dday(a.start_date) : a.status, color: typeColor(a.activity_type) }));
   const defaultSlides = [
-    { eyebrow: 'JOIN SHIFT', line1: '새로운 가능성은', line2: '함께할 때 시작돼요', text: 'SHIFT와 함께할 새로운 부원을 기다립니다.', cta: '모집 자세히 보기', link: '/more', art: 'cube' },
+    { eyebrow: 'JOIN SHIFT', line1: '새로운 가능성은', line2: '함께할 때 시작돼요', text: 'SHIFT와 함께할 새로운 부원을 기다립니다.', cta: '모집 자세히 보기', link: '/recruit', art: 'cube' },
     { eyebrow: 'BUILD WITH SHIFT', line1: '아이디어를 세상에', line2: '실행으로 옮겨보세요', text: '2026 신규 프로젝트 팀 빌딩이 시작됩니다.', cta: '프로젝트 둘러보기', link: '/activities', art: 'rings' },
     { eyebrow: 'SHIFT CONNECT', line1: '배움과 경험이 만나는', line2: '커뮤니티의 하루', text: 'SHIFT의 행사와 모임을 확인해보세요.', cta: '행사 확인하기', link: '/activities', art: 'network' }
   ];

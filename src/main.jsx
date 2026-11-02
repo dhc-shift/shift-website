@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import './styles.css';
 import { isSupabaseConfigured, supabase } from './supabase.js';
 import Header from './components/Header.jsx';
@@ -10,7 +10,8 @@ import About from './pages/About.jsx';
 import Activities from './pages/Activities.jsx';
 import Archive from './pages/Archive.jsx';
 import Board from './pages/Board.jsx';
-import More from './pages/More.jsx';
+import Mileage from './pages/Mileage.jsx';
+import Recruit from './pages/Recruit.jsx';
 import MyPage from './pages/MyPage.jsx';
 import LoginPage, { UpdatePasswordPage } from './pages/LoginPage.jsx';
 import AdminPage from './pages/Admin.jsx';
@@ -100,7 +101,10 @@ function App(){
     return()=>subscription.unsubscribe();
   },[]);
 
-  useEffect(()=>{ window.scrollTo({ top: 0 }); },[location.pathname]);
+  useEffect(()=>{
+    const target=location.hash&&document.getElementById(location.hash.slice(1));
+    if(target)target.scrollIntoView();else window.scrollTo({ top: 0 });
+  },[location.pathname,location.hash,loading]);
 
   const signOut=async()=>{await supabase.auth.signOut();setUser(null);setProfile(null);navigate('/')};
 
@@ -116,7 +120,9 @@ function App(){
         <Route path="/archive" element={<Archive activities={activities}/>}/>
         <Route path="/board" element={<Board newsletters={newsletters} notices={notices} documents={documents} user={user}/>}/>
         <Route path="/documents/:documentId" element={<DocumentViewer documents={documents}/>}/>
-        <Route path="/more" element={<More setPage={setPage} user={user} memberStats={memberStats} mileageHistory={mileageHistory} summary={memberSummary} mileageItems={mileageItems}/>}/>
+        <Route path="/mileage" element={<Mileage setPage={setPage} user={user} memberStats={memberStats} history={mileageHistory} summary={memberSummary} items={mileageItems}/>}/>
+        <Route path="/recruit" element={<Recruit/>}/>
+        <Route path="/more" element={<Navigate to="/recruit" replace/>}/>
         <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} activities={activities} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>

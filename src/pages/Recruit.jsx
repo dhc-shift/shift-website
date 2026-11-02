@@ -1,0 +1,6 @@
+import React from 'react';
+import { ChevronDown, ExternalLink } from 'lucide-react';
+import { RECRUIT_SITE_URL } from '../data.js';
+import { Button, PeopleArt, SectionHead, SubHeader } from '../components/ui.jsx';
+
+export default function Recruit(){return <><SubHeader title="모집 안내"/><section className="section container recruit-page"><div className="recruit-hero"><span className="eyebrow">JOIN SHIFT</span><h2>당신의 아이디어가<br/><em>세상을 움직이는 순간.</em></h2><p>SHIFT와 함께할 새로운 멤버를 기다립니다.</p><Button onClick={()=>window.open(RECRUIT_SITE_URL,'_blank','noopener')}>모집 사이트 보기 <ExternalLink size={16}/></Button><PeopleArt/></div><div className="recruit-info">{[['다음 모집','일정이 정해지면 이 페이지에 안내합니다'],['모집 대상','IT와 디지털 헬스케어에 관심 있는 대학생'],['지원 방법','온라인 지원서 제출 → 인터뷰 → 최종 발표']].map(x=><div key={x[0]}><span>{x[0]}</span><b>{x[1]}</b></div>)}</div><SectionHead eyebrow="FAQ" title="자주 묻는 질문"/><div className="faq">{[['개발 경험이 없어도 지원할 수 있나요?','네, 가능합니다. 현재의 실력보다 함께 배우고 실행하려는 태도를 더 중요하게 생각합니다. 코딩 소모임과 IT 온보딩 세션으로 기초부터 함께 시작할 수 있어요.'],['학교나 전공에 제한이 있나요?','디지털헬스케어학부 학술동아리지만, IT와 디지털 헬스케어에 관심이 있다면 전공과 학년에 관계없이 지원할 수 있습니다.'],['활동은 주로 언제 진행되나요?','정기 활동은 학기 중 진행되며, 프로그램별 일정은 모집 시 공지합니다. 소모임과 커피챗은 참여자들과 조율해 유연하게 운영됩니다.']].map(([q,a])=><details key={q}><summary>{q}<ChevronDown/></summary><p>{a}</p></details>)}</div></section></>}

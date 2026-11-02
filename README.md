@@ -69,9 +69,9 @@ src/
 ├── supabase.js         Supabase 클라이언트
 ├── data.js             정적 콘텐츠 (메뉴, 아카이브 과거 기록 등)
 ├── styles.css          전체 스타일
-├── components/         Header(프로필 드롭다운) · Footer · 공용 UI
+├── components/         Header(드롭다운 메뉴·프로필) · Footer · 공용 UI
 └── pages/              페이지 1개 = 파일 1개
-    ├── Home  About  Activities  Archive  Board  More
+    ├── Home  About  Activities  Archive  Board  Mileage  Recruit
     ├── MyPage(프로필 수정)  LoginPage(+비밀번호 재설정)
     └── Admin           관리자: 활동·뉴스레터·일정·공지·자료·건의·회원
 supabase/               DB 마이그레이션 (001 → 012 순서 실행)
@@ -82,7 +82,7 @@ google-apps-script/     시트 동기화 백업본 (원본은 시트의 Apps Scr
 
 1. `src/pages/`에 컴포넌트 파일 생성
 2. `src/main.jsx`의 `<Routes>`에 `<Route>` 추가
-3. 메뉴에 넣으려면 `src/data.js`의 `navItems`에 추가
+3. 메뉴에 넣으려면 `src/data.js`의 `menuGroups`에 추가
 
 ## Google Sheets 동기화
 
