@@ -73,7 +73,7 @@ src/
 └── pages/              페이지 1개 = 파일 1개
     ├── Home  About  Activities  Archive  Board  Mileage  Recruit
     ├── MyPage(프로필 수정)  LoginPage(+비밀번호 재설정)
-    └── Admin           관리자: 활동·뉴스레터·일정·공지·자료·건의·회원
+    └── Admin           관리자: 오늘 할 일·활동·일정·공지·뉴스레터·자료·건의·배너·회원
 supabase/               DB 마이그레이션 (001 → 012 순서 실행)
 google-apps-script/     시트 동기화 백업본 (원본은 시트의 Apps Script)
 ```
