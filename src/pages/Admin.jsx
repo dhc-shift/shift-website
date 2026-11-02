@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Bell, ChevronRight, GalleryHorizontal, CalendarDays, CalendarX, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, ListChecks, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
+import { Bell, ChevronRight, Coffee, GalleryHorizontal, CalendarDays, CalendarX, ExternalLink, FileText, FolderArchive, Image as ImageIcon, Lightbulb, ListChecks, Mail, MessageSquareText, Pencil, Pin, Plus, Trash2, Upload, UserPlus, Users, X } from 'lucide-react';
 import { eventTone, typeColor } from '../data.js';
 import { supabase } from '../supabase.js';
 import { ActivityIcon, AdminList, Badge, Button, SectionHead } from '../components/ui.jsx';
+import CoffeeChatAdmin from './AdminCoffeeChat.jsx';
 
 const adminMenu=[
-  ['프로그램',[['activities','활동',Lightbulb],['events','일정',CalendarDays]]],
+  ['프로그램',[['activities','활동',Lightbulb],['coffee','커피챗',Coffee],['events','일정',CalendarDays]]],
   ['소식',[['notices','공지사항',Bell],['newsletters','뉴스레터',Mail],['documents','자료실',FolderArchive],['suggestions','건의함',MessageSquareText]]],
   ['사이트',[['banners','홈 배너',GalleryHorizontal],['members','회원 권한',Users]]]
 ];
@@ -13,12 +14,14 @@ const adminMenu=[
 const isoDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
 // 지금 손댈 일. 건수가 0인 항목은 숨긴다.
-function todayItems({suggestions,activities,newsletters}){
+function todayItems({suggestions,activities,newsletters,coffeeChats}){
   const now=new Date();
   const today=isoDate(now);
   const weekLater=isoDate(new Date(now.getFullYear(),now.getMonth(),now.getDate()+7));
   const recruiting=activities.filter(a=>a.status==='모집 중'&&a.apply_end);
   return [
+    {icon:Coffee,title:'커피챗 연결 대기',text:'인원이 다 찬 커피챗에 상대방 연락이 필요해요',count:coffeeChats.filter(c=>c.status==='모집 완료').length,tab:'coffee'},
+    {icon:CalendarDays,title:'커피챗 일정 입력',text:'연결을 시작한 커피챗의 일정을 정해주세요',count:coffeeChats.filter(c=>c.status==='연결 중').length,tab:'coffee'},
     {icon:MessageSquareText,title:'답변 안 한 건의',text:'건의함에서 확인하고 처리 상태를 바꿔주세요',count:suggestions.filter(x=>x.status==='접수').length,tab:'suggestions'},
     {icon:Lightbulb,title:'곧 마감되는 활동',text:'신청 마감이 7일 안에 다가온 활동이에요',count:recruiting.filter(a=>a.apply_end>=today&&a.apply_end<=weekLater).length,tab:'activities'},
     {icon:CalendarX,title:'마감일이 지난 모집 중 활동',text:'상태를 진행 중이나 완료로 바꿔주세요',count:recruiting.filter(a=>a.apply_end<today).length,tab:'activities'},
@@ -28,15 +31,15 @@ function todayItems({suggestions,activities,newsletters}){
 
 function TodayAdmin({items,openTab}){return <><SectionHead eyebrow="TODAY" title="오늘 할 일" text="지금 확인이 필요한 일만 모았습니다."/>{items.length?<div className="today-list">{items.map(x=><button className="today-row" onClick={()=>openTab(x.tab)} key={x.title}><span className="today-icon"><x.icon/></span><span><b>{x.title}</b><small>{x.text}</small></span><strong>{x.count}</strong><ChevronRight size={17}/></button>)}</div>:<div className="board-empty"><ListChecks/><h3>지금 처리할 일이 없어요</h3><p>확인이 필요한 일이 생기면 이곳에 표시됩니다.</p></div>}</>}
 
-export default function AdminPage({ profile, newsletters, events, members, notices, documents, suggestions, activities, roster, banners, refresh }) {
+export default function AdminPage({ profile, newsletters, events, members, notices, documents, suggestions, activities, roster, banners, coffeeChats = [], coffeeAdmin = {}, refresh }) {
   const [tab,setTab]=useState('today');
   const [activityMode,setActivityMode]=useState('active');
   const [notice,setNotice]=useState('');
   if(profile?.role!=='admin')return <section className="auth-page container"><div className="auth-card"><h1>접근 권한이 없습니다</h1><p>관리자 계정으로 로그인해주세요.</p></div></section>;
   const openTab=id=>{setTab(id);setNotice('')};
-  const today=todayItems({suggestions,activities,newsletters});
+  const today=todayItems({suggestions,activities,newsletters,coffeeChats});
   const todayCount=today.reduce((sum,x)=>sum+x.count,0);
-  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>운영 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav"><button className={tab==='today'?'active':''} onClick={()=>openTab('today')}><ListChecks/>오늘 할 일{todayCount>0&&<b>{todayCount}</b>}</button>{adminMenu.map(([group,items])=><React.Fragment key={group}><p className="admin-nav-group">{group}</p>{items.map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>openTab(id)} key={id}><I/>{label}</button>)}</React.Fragment>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='today'&&<TodayAdmin items={today} openTab={openTab}/>}{tab==='activities'&&<><div className="filter-row">{[['active','진행 중'],['archive','지난 활동']].map(([mode,label])=><button className={activityMode===mode?'active':''} onClick={()=>{setActivityMode(mode);setNotice('')}} key={mode}>{label}</button>)}</div><ActivityAdmin key={activityMode} items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode={activityMode}/></>} {tab==='banners'&&<BannerAdmin items={banners} refresh={refresh} setNotice={setNotice}/>} {tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
+  return <><section className="admin-hero"><div className="container"><span className="eyebrow">SHIFT ADMIN</span><h1>운영 관리</h1><p>웹사이트의 운영 데이터를 코드 수정 없이 관리합니다.</p></div></section><section className="admin-layout container"><aside className="admin-nav"><button className={tab==='today'?'active':''} onClick={()=>openTab('today')}><ListChecks/>오늘 할 일{todayCount>0&&<b>{todayCount}</b>}</button>{adminMenu.map(([group,items])=><React.Fragment key={group}><p className="admin-nav-group">{group}</p>{items.map(([id,label,I])=><button className={tab===id?'active':''} onClick={()=>openTab(id)} key={id}><I/>{label}</button>)}</React.Fragment>)}</aside><div className="admin-main">{notice&&<div className="admin-notice">{notice}</div>}{tab==='today'&&<TodayAdmin items={today} openTab={openTab}/>}{tab==='activities'&&<><div className="filter-row">{[['active','진행 중'],['archive','지난 활동']].map(([mode,label])=><button className={activityMode===mode?'active':''} onClick={()=>{setActivityMode(mode);setNotice('')}} key={mode}>{label}</button>)}</div><ActivityAdmin key={activityMode} items={activities} roster={roster} refresh={refresh} setNotice={setNotice} mode={activityMode}/></>} {tab==='coffee'&&<CoffeeChatAdmin chats={coffeeChats} {...coffeeAdmin} refresh={refresh} setNotice={setNotice}/>} {tab==='banners'&&<BannerAdmin items={banners} refresh={refresh} setNotice={setNotice}/>} {tab==='newsletters'&&<NewsletterAdmin items={newsletters} refresh={refresh} setNotice={setNotice}/>} {tab==='events'&&<EventAdmin items={events} refresh={refresh} setNotice={setNotice}/>} {tab==='notices'&&<NoticeAdmin items={notices} refresh={refresh} setNotice={setNotice}/>} {tab==='documents'&&<DocumentAdmin items={documents} refresh={refresh} setNotice={setNotice}/>} {tab==='suggestions'&&<SuggestionAdmin items={suggestions} refresh={refresh} setNotice={setNotice}/>} {tab==='members'&&<MemberAdmin items={members} currentId={profile.id} refresh={refresh} setNotice={setNotice}/>}</div></section></>;
 }
 
 

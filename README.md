@@ -28,6 +28,7 @@
 | 📰 **게시판** | 공지사항(상단 고정 핀), 뉴스레터(PDF), 자료실, 익명 건의함(운영진에게는 이름 표시 — 제출 화면에 명시) |
 | 🔐 **계정** | 부원 명단에 등록된 이메일만 가입 가능(DB 트리거). 비밀번호 셀프 재설정, 프로필 사진·이름 변경 |
 | 🗃 **아카이브** | 완료된 활동이 참여자 이름·포스터와 함께 자동 표시 |
+| ☕ **커피챗** | 상시 커피챗. 사람이나 주제에 신청, 인원이 차면 운영진에게 메일, 관리자 화면에서 연결·일정·회차 관리 |
 
 ## 기술 구성
 
@@ -69,11 +70,12 @@ src/
 ├── supabase.js         Supabase 클라이언트
 ├── data.js             정적 콘텐츠 (메뉴, 아카이브 과거 기록 등)
 ├── styles.css          전체 스타일
-├── components/         Header(드롭다운 메뉴·프로필) · Footer · 공용 UI
+├── coffee-chat.css     커피챗 전용 스타일
+├── components/         Header(드롭다운 메뉴·프로필) · Footer · 공용 UI · coffeeChat(커피챗 공용 조각)
 └── pages/              페이지 1개 = 파일 1개
-    ├── Home  About  Activities  Archive  Board  Mileage  Recruit
+    ├── Home  About  Activities  CoffeeChat  Archive  Board  Mileage  Recruit
     ├── MyPage(프로필 수정)  LoginPage(+비밀번호 재설정)
-    └── Admin           관리자: 오늘 할 일·활동·일정·공지·뉴스레터·자료·건의·배너·회원
+    └── Admin           관리자: 오늘 할 일·활동·커피챗(AdminCoffeeChat)·일정·공지·뉴스레터·자료·건의·배너·회원
 supabase/               DB 마이그레이션 (001 → 012 순서 실행)
 google-apps-script/     시트 동기화 백업본 (원본은 시트의 Apps Script)
 ```
@@ -100,6 +102,7 @@ SQL Editor에서 순서대로 실행:
 ```
 setup.sql → 002 → 003 → 004 → 005 → 006(가입 제한) → 007(이름 자동 조회)
 → 008(프로필 수정) → 009(프로필 사진) → 010(활동) → 011(포스터) → 012(신청 안내문)
+→ 013~017(공지·사진·배너) → 018(상시 커피챗) → 019(커피챗 알림 메일, Resend 키 필요)
 ```
 
 이후 첫 관리자로 가입하고 `promote-first-admin.example.sql`의 이메일을 바꿔 실행합니다.

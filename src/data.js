@@ -1,5 +1,5 @@
 // 사이트 정적 데이터. DB로 옮기기 전까지 여기서 관리합니다.
-import { Archive, Bell, CalendarDays, FolderArchive, Lightbulb, Mail, MessageSquareText, Sparkles, UserPlus, Users } from 'lucide-react';
+import { Archive, Bell, CalendarDays, Coffee, FolderArchive, Lightbulb, Mail, MessageSquareText, Sparkles, UserPlus, Users } from 'lucide-react';
 
 // 최상위 3개 + 부속 메뉴. to는 setPage에 넘기는 경로, sections는 활성 표시에 쓰는 첫 경로 조각.
 export const menuGroups = [
@@ -8,8 +8,9 @@ export const menuGroups = [
     { label: '조직', desc: '회장단과 본부 구성', to: 'about#org', icon: Users },
     { label: '모집 안내', desc: '지원 방법과 다음 모집', to: 'recruit', icon: UserPlus }
   ] },
-  { label: '활동', sections: ['activities', 'archive'], items: [
+  { label: '활동', sections: ['activities', 'coffee-chat', 'archive'], items: [
     { label: '진행 중인 활동', desc: '지금 신청하거나 참여할 수 있어요', to: 'activities', icon: Sparkles },
+    { label: '커피챗', desc: '선배에게 같이 물어보기', to: 'coffee-chat', icon: Coffee },
     { label: '일정', desc: '이번 달 활동 달력', to: 'activities#calendar', icon: CalendarDays },
     { label: '지난 활동', desc: '함께 만든 기록', to: 'archive', icon: Archive }
   ] },

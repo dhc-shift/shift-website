@@ -1,17 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Bell, ChevronRight, Trophy, Upload, X } from 'lucide-react';
+import { ArrowRight, Bell, ChevronRight, Coffee, Trophy, Upload, X } from 'lucide-react';
 import { supabase } from '../supabase.js';
 import { typeColor } from '../data.js';
 import { ActivityIcon, Badge, Button, SectionHead } from '../components/ui.jsx';
+import { cancelApplication, ClosedCoffeeRow, isClosed, MyCoffeeRow } from '../components/coffeeChat.jsx';
 
-export default function MyPage({setPage,profile,memberStats,activities=[],refresh}){
+export default function MyPage({setPage,profile,memberStats,activities=[],coffeeChats=[],myCoffeeApps=[],refresh}){
   const myActivities=memberStats?activities.filter(a=>a.activity_members?.some(m=>m.student_id===memberStats.student_id)):[];
   const [searchParams,setSearchParams]=useSearchParams();
   const [editOpen,setEditOpen]=useState(searchParams.get('edit')==='1');
   useEffect(()=>{ if(searchParams.get('edit')==='1'){ setEditOpen(true); setSearchParams({},{replace:true}); } },[searchParams]);
   const name=memberStats?.name||profile?.name||'SHIFT 회원';
-  return <><section className="profile-hero"><div className="container profile-row"><div className="avatar-large">{profile?.avatar_url?<img src={profile.avatar_url} alt=""/>:name[0]}</div><div><span className="eyebrow">MY SHIFT</span><h1>안녕하세요, <em>{name}님</em></h1><p>{memberStats?`${memberStats.affiliation} · ${memberStats.cohort} · 학번 ${memberStats.student_id}`:(profile?.email||'회원 정보를 불러오는 중입니다.')}</p></div><button className="button secondary" onClick={()=>setEditOpen(true)}>프로필 수정</button></div></section><section className="section container">{!memberStats&&<div className="member-sync-notice"><Bell/><div><b>Google Sheets 회원 정보를 찾지 못했습니다.</b><span>로그인 이메일과 '인원 관리' 시트의 이메일이 정확히 같은지 확인해주세요.</span></div></div>}<div className="my-summary"><div className="my-card points"><span>현재 보유 마일리지</span><strong>{(memberStats?.total_mileage??0).toLocaleString()}<small>P</small></strong><button onClick={()=>setPage('mileage')}>마일리지 자세히 보기 <ArrowRight/></button></div><div className="my-card grade"><span>현재 등급</span><strong>{memberStats?.current_tier||'미정'}</strong><p>Google Sheets 기준 최신 등급</p></div><div className="my-card active-count"><span>현재 순위</span><strong>{memberStats?.current_rank?`${memberStats.current_rank}위`:'—'}</strong><div className="floating-calendar"><Trophy/></div></div></div><div className="panel participation"><SectionHead eyebrow="MY ACTIVITIES" title="참여 중인 활동" action={<button className="text-link" onClick={()=>setPage('activities')}>전체 보기 <ArrowRight/></button>}/>{myActivities.length?myActivities.map(a=><div className="participation-row" key={a.id}><div className={`mini-icon ${typeColor(a.activity_type)}`}><ActivityIcon type={a.activity_type}/></div><div><b>{a.title}</b><span>{a.activity_type}{a.schedule?` · ${a.schedule}`:''}</span></div><Badge tone={a.status==='완료'?'gray':typeColor(a.activity_type)}>{a.status}</Badge><ChevronRight/></div>):<div className="board-empty"><Bell/><p>참여 중인 활동이 아직 없습니다.</p></div>}</div></section>{editOpen&&<ProfileEditModal profile={profile} refresh={refresh} close={()=>setEditOpen(false)}/>}</>;
+  return <><section className="profile-hero"><div className="container profile-row"><div className="avatar-large">{profile?.avatar_url?<img src={profile.avatar_url} alt=""/>:name[0]}</div><div><span className="eyebrow">MY SHIFT</span><h1>안녕하세요, <em>{name}님</em></h1><p>{memberStats?`${memberStats.affiliation} · ${memberStats.cohort} · 학번 ${memberStats.student_id}`:(profile?.email||'회원 정보를 불러오는 중입니다.')}</p></div><button className="button secondary" onClick={()=>setEditOpen(true)}>프로필 수정</button></div></section><section className="section container">{!memberStats&&<div className="member-sync-notice"><Bell/><div><b>Google Sheets 회원 정보를 찾지 못했습니다.</b><span>로그인 이메일과 '인원 관리' 시트의 이메일이 정확히 같은지 확인해주세요.</span></div></div>}<div className="my-summary"><div className="my-card points"><span>현재 보유 마일리지</span><strong>{(memberStats?.total_mileage??0).toLocaleString()}<small>P</small></strong><button onClick={()=>setPage('mileage')}>마일리지 자세히 보기 <ArrowRight/></button></div><div className="my-card grade"><span>현재 등급</span><strong>{memberStats?.current_tier||'미정'}</strong><p>Google Sheets 기준 최신 등급</p></div><div className="my-card active-count"><span>현재 순위</span><strong>{memberStats?.current_rank?`${memberStats.current_rank}위`:'—'}</strong><div className="floating-calendar"><Trophy/></div></div></div><MyCoffeeChats chats={coffeeChats} apps={myCoffeeApps} setPage={setPage} refresh={refresh}/><div className="panel participation"><SectionHead eyebrow="MY ACTIVITIES" title="참여 중인 활동" action={<button className="text-link" onClick={()=>setPage('activities')}>전체 보기 <ArrowRight/></button>}/>{myActivities.length?myActivities.map(a=><div className="participation-row" key={a.id}><div className={`mini-icon ${typeColor(a.activity_type)}`}><ActivityIcon type={a.activity_type}/></div><div><b>{a.title}</b><span>{a.activity_type}{a.schedule?` · ${a.schedule}`:''}</span></div><Badge tone={a.status==='완료'?'gray':typeColor(a.activity_type)}>{a.status}</Badge><ChevronRight/></div>):<div className="board-empty"><Bell/><p>참여 중인 활동이 아직 없습니다.</p></div>}</div></section>{editOpen&&<ProfileEditModal profile={profile} refresh={refresh} close={()=>setEditOpen(false)}/>}</>;
+}
+
+function MyCoffeeChats({chats,apps,setPage,refresh}){
+  const [message,setMessage]=useState('');
+  const mine=chats.filter(c=>apps.some(a=>a.chat_id===c.id));
+  const active=mine.filter(c=>!isClosed(c));
+  const closed=mine.filter(isClosed);
+  const cancel=async chat=>{
+    const error=await cancelApplication(apps.find(a=>a.chat_id===chat.id).id);
+    setMessage(error||'신청을 취소했어요.');
+    if(!error)await refresh();
+  };
+  return <div className="panel participation" style={{marginBottom:'22px'}}><SectionHead eyebrow="MY COFFEE CHAT" title="내 커피챗" action={<button className="text-link" onClick={()=>setPage('coffee-chat')}>커피챗 둘러보기 <ArrowRight/></button>}/>{message&&<div className="admin-notice">{message}</div>}{active.length?active.map(c=><MyCoffeeRow chat={c} showHost onCancel={cancel} key={c.id}/>):<div className="board-empty"><Coffee/><p>진행 중인 커피챗이 없어요. 듣고 싶은 이야기를 골라 신청해보세요.</p></div>}{closed.length>0&&<><p className="cc-old-title">지난 신청</p>{closed.map(c=><ClosedCoffeeRow chat={c} key={c.id}/>)}</>}</div>;
 }
 
 function ProfileEditModal({profile,refresh,close}){

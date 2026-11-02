@@ -12,6 +12,7 @@ import Archive from './pages/Archive.jsx';
 import Board from './pages/Board.jsx';
 import Mileage from './pages/Mileage.jsx';
 import Recruit from './pages/Recruit.jsx';
+import CoffeeChat from './pages/CoffeeChat.jsx';
 import MyPage from './pages/MyPage.jsx';
 import LoginPage, { UpdatePasswordPage } from './pages/LoginPage.jsx';
 import AdminPage from './pages/Admin.jsx';
@@ -35,6 +36,9 @@ function App(){
   const [activities,setActivities]=useState([]);
   const [banners,setBanners]=useState([]);
   const [roster,setRoster]=useState([]);
+  const [coffeeChats,setCoffeeChats]=useState([]);
+  const [myCoffeeApps,setMyCoffeeApps]=useState([]);
+  const [coffeeAdmin,setCoffeeAdmin]=useState({applications:[],hosts:[],privates:[]});
   const [loading,setLoading]=useState(isSupabaseConfigured);
   const [loadError,setLoadError]=useState(false);
 
@@ -45,7 +49,7 @@ function App(){
   const loadData=async(currentUser=user)=>{
     if(!supabase)return;
     try{
-      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows},{data:activityRows},{data:bannerRows}]=await Promise.all([
+      const [{data:news},{data:eventRows},{data:noticeRows},{data:documentRows},{data:summaryRow},{data:itemRows},{data:activityRows},{data:bannerRows},{data:coffeeRows}]=await Promise.all([
         supabase.from('newsletters').select('*').order('published_at',{ascending:false}),
         supabase.from('calendar_events').select('*').order('event_date'),
         supabase.from('notices').select('*').order('is_pinned',{ascending:false}).order('published_at',{ascending:false}),
@@ -53,10 +57,12 @@ function App(){
         supabase.from('public_member_summary').select('*').eq('id',1).maybeSingle(),
         supabase.from('mileage_items').select('*').order('base_score',{ascending:false}),
         supabase.from('activities').select('*, activity_members(id,member_name,student_id,member_role), activity_photos(id,photo_path)').order('created_at',{ascending:false}),
-        supabase.from('banners').select('*').order('sort_order').order('created_at')
+        supabase.from('banners').select('*').order('sort_order').order('created_at'),
+        supabase.from('coffee_chats').select('*').order('created_at',{ascending:false})
       ]);
       setNewsletters((news||[]).map(item=>({...item,file_url:supabase.storage.from('newsletters').getPublicUrl(item.file_path).data.publicUrl})));
       setEvents(eventRows||[]);
+      setCoffeeChats(coffeeRows||[]);
       setNotices(noticeRows||[]);
       setDocuments((documentRows||[]).map(item=>({...item,file_url:supabase.storage.from('documents').getPublicUrl(item.file_path).data.publicUrl})));
       setMemberSummary(summaryRow||null);
@@ -64,26 +70,32 @@ function App(){
       setBanners((bannerRows||[]).map(item=>({...item,image_url:item.image_path?supabase.storage.from('posters').getPublicUrl(item.image_path).data.publicUrl:null})));
       setActivities((activityRows||[]).map(item=>({...item,poster_url:item.poster_path?supabase.storage.from('posters').getPublicUrl(item.poster_path).data.publicUrl:null,photos:(item.activity_photos||[]).map(ph=>({...ph,url:supabase.storage.from('posters').getPublicUrl(ph.photo_path).data.publicUrl}))})));
       if(currentUser){
-        const [{data:p},{data:stats},{data:history}]=await Promise.all([
+        const [{data:p},{data:stats},{data:history},{data:myApps}]=await Promise.all([
           supabase.from('profiles').select('*').eq('id',currentUser.id).maybeSingle(),
           supabase.from('member_stats').select('*').ilike('email',currentUser.email).maybeSingle(),
-          supabase.from('mileage_history').select('*').order('activity_date',{ascending:false})
+          supabase.from('mileage_history').select('*').order('activity_date',{ascending:false}),
+          supabase.from('coffee_chat_applications').select('id,chat_id').eq('user_id',currentUser.id)
         ]);
         setProfile(p);
         setMemberStats(stats||null);
         setMileageHistory(history||[]);
+        setMyCoffeeApps(myApps||[]);
         if(p?.role==='admin'){
-          const [{data:m},{data:s},{data:r}]=await Promise.all([
+          const [{data:m},{data:s},{data:r},{data:coffeeApps},{data:coffeeHosts},{data:coffeePrivate}]=await Promise.all([
             supabase.from('profiles').select('*').order('created_at'),
             supabase.from('suggestions').select('*, profiles(name,email)').order('created_at',{ascending:false}),
-            supabase.from('member_stats').select('student_id,name,cohort').order('name')
+            supabase.from('member_stats').select('student_id,name,cohort').order('name'),
+            supabase.from('coffee_chat_applications').select('*').order('created_at'),
+            supabase.from('coffee_chat_hosts').select('*').order('created_at',{ascending:false}),
+            supabase.from('coffee_chat_private').select('*')
           ]);
           setMembers(m||[]);
           setSuggestions(s||[]);
           setRoster(r||[]);
+          setCoffeeAdmin({applications:coffeeApps||[],hosts:coffeeHosts||[],privates:coffeePrivate||[]});
         }
       }else{
-        setProfile(null);setMemberStats(null);setMileageHistory([]);setMembers([]);setSuggestions([]);setRoster([]);
+        setProfile(null);setMemberStats(null);setMileageHistory([]);setMembers([]);setSuggestions([]);setRoster([]);setMyCoffeeApps([]);setCoffeeAdmin({applications:[],hosts:[],privates:[]});
       }
       setLoadError(false);
     }catch(err){
@@ -122,11 +134,12 @@ function App(){
         <Route path="/documents/:documentId" element={<DocumentViewer documents={documents}/>}/>
         <Route path="/mileage" element={<Mileage setPage={setPage} user={user} memberStats={memberStats} history={mileageHistory} summary={memberSummary} items={mileageItems}/>}/>
         <Route path="/recruit" element={<Recruit/>}/>
+        <Route path="/coffee-chat" element={<CoffeeChat chats={coffeeChats} myApps={myCoffeeApps} user={user} setPage={setPage} refresh={()=>loadData(user)}/>}/>
         <Route path="/more" element={<Navigate to="/recruit" replace/>}/>
-        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} activities={activities} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
+        <Route path="/mypage" element={user?<MyPage setPage={setPage} profile={profile} memberStats={memberStats} activities={activities} coffeeChats={coffeeChats} myCoffeeApps={myCoffeeApps} refresh={()=>loadData(user)}/>:<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/login" element={<LoginPage user={user} profile={profile} setPage={setPage}/>}/>
         <Route path="/reset" element={<UpdatePasswordPage setPage={setPage}/>}/>
-        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} activities={activities} roster={roster} banners={banners} refresh={()=>loadData(user)}/>}/>
+        <Route path="/admin" element={<AdminPage profile={profile} newsletters={newsletters} events={events} members={members} notices={notices} documents={documents} suggestions={suggestions} activities={activities} roster={roster} banners={banners} coffeeChats={coffeeChats} coffeeAdmin={coffeeAdmin} refresh={()=>loadData(user)}/>}/>
         <Route path="*" element={<NotFound setPage={setPage}/>}/>
       </Routes>}
     </main>
