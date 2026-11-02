@@ -149,12 +149,12 @@ function ActivityAdmin({items,roster,refresh,setNotice,mode='active'}){
   </div>)}</AdminList></>}
 
 function BannerAdmin({items,refresh,setNotice}){
-  const empty={eyebrow:'',title_line1:'',title_line2:'',description:'',cta_label:'',cta_url:'',art:'cube',sort_order:0,is_active:true,text_overlay:false};
+  const empty={eyebrow:'',title_line1:'',title_line2:'',description:'',cta_label:'',cta_url:'',art:'cube',sort_order:0,is_active:true};
   const [form,setForm]=useState(empty);
   const [editing,setEditing]=useState(null);
   const [image,setImage]=useState(null);
   const [saving,setSaving]=useState(false);
-  const startEdit=item=>{setEditing(item);setImage(null);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active,text_overlay:item.text_overlay??false});};
+  const startEdit=item=>{setEditing(item);setImage(null);setForm({eyebrow:item.eyebrow,title_line1:item.title_line1,title_line2:item.title_line2,description:item.description,cta_label:item.cta_label,cta_url:item.cta_url,art:item.art,sort_order:item.sort_order,is_active:item.is_active});};
   const cancelEdit=()=>{setEditing(null);setForm(empty);setImage(null)};
   const compressImage=async file=>{
     const bitmap=await createImageBitmap(file);
@@ -195,17 +195,16 @@ function BannerAdmin({items,refresh,setNotice}){
   };
   return <><SectionHead eyebrow="BANNERS" title={editing?`배너 수정 — ${editing.title_line1}`:'홈 배너 관리'} text="홈 상단에 순환 표시되는 배너입니다. 등록된 배너가 하나도 없으면 기본 배너 3장이 표시됩니다."/>
   <form className="admin-form" onSubmit={submit}>
-    <label>상단 라벨 (영문 소제목)<input value={form.eyebrow} onChange={e=>setForm({...form,eyebrow:e.target.value})} placeholder="2026 SECOND HALF"/></label>
+    <label>상단 라벨 (영문 소제목)<input value={form.eyebrow} onChange={e=>setForm({...form,eyebrow:e.target.value})} placeholder="JOIN SHIFT"/></label>
     <label>배경 그래픽<select value={form.art} onChange={e=>setForm({...form,art:e.target.value})}><option value="cube">큐브</option><option value="rings">링</option><option value="network">네트워크</option></select></label>
     <label>제목 1줄<input required value={form.title_line1} onChange={e=>setForm({...form,title_line1:e.target.value})} placeholder="새로운 가능성은"/></label>
     <label>제목 2줄 (색상 강조)<input value={form.title_line2} onChange={e=>setForm({...form,title_line2:e.target.value})} placeholder="함께할 때 시작돼요"/></label>
-    <label className="wide">설명<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="SHIFT 2기 신입부원을 모집합니다."/></label>
+    <label className="wide">설명<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="SHIFT와 함께할 새로운 부원을 모집합니다."/></label>
     <label>버튼 문구 (비우면 버튼 없음)<input value={form.cta_label} onChange={e=>setForm({...form,cta_label:e.target.value})} placeholder="모집 자세히 보기"/></label>
     <label>버튼 링크<input value={form.cta_url} onChange={e=>setForm({...form,cta_url:e.target.value})} placeholder="/activities 또는 https://..."/></label>
     <label>정렬 순서 (작을수록 앞)<input type="number" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label>
     <label className="check-label"><input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})}/> 노출</label>
-    <label className="check-label wide"><input type="checkbox" checked={form.text_overlay} onChange={e=>setForm({...form,text_overlay:e.target.checked})}/> 글자 가독성 배경 사용 <span className="field-help">사진 위 왼쪽에 부드러운 반투명 그라데이션을 적용합니다.</span></label>
-    <label className="wide upload-label"><Upload/>배너 이미지 (선택 — 있으면 배경 그래픽 대신 표시)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setImage(e.target.files[0]||null)}/><span>{image?.name||(editing?.image_path?'기존 이미지 유지 (새 이미지 선택 시 교체)':'이미지를 선택해주세요')}</span></label>
+    <label className="wide upload-label"><Upload/>배너 이미지 (선택 — 있으면 배경 그래픽 대신 표시, 글자는 이미지 아래에 나옴)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setImage(e.target.files[0]||null)}/><span>{image?.name||(editing?.image_path?'기존 이미지 유지 (새 이미지 선택 시 교체)':'이미지를 선택해주세요')}</span></label>
     <div className="form-actions"><Button>{saving?'저장 중...':editing?'수정 저장':'배너 등록'}</Button>{editing&&<button type="button" className="button secondary" onClick={cancelEdit}>취소</button>}</div>
   </form>
   <AdminList>{items.map(item=><div className="admin-list-row edit-grid-row" key={item.id}><GalleryHorizontal/><div><b>{item.title_line1}{item.title_line2?` ${item.title_line2}`:''}</b><span>{item.eyebrow||'라벨 없음'} · 순서 {item.sort_order}{item.is_active?'':' · 숨김'}</span></div><button type="button" className={item.is_active?'pin-toggle on':'pin-toggle'} onClick={()=>toggleActive(item)} title={item.is_active?'숨기기':'노출하기'}>{item.is_active?'ON':'OFF'}</button><button onClick={()=>startEdit(item)} title="수정" aria-label="수정"><Pencil/></button><button onClick={()=>remove(item)}><Trash2/></button></div>)}</AdminList></>}

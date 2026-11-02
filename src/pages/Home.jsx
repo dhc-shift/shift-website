@@ -8,13 +8,13 @@ export default function Home({ setPage, notices = [], activities = [], user, ban
   const openActivities = activities.filter(a => a.status !== '완료' && (a.access === 'public' || user)).slice(0, 4)
     .map(a => ({ id: a.id, type: a.activity_type, title: a.title, desc: a.description, period: a.schedule, dday: a.status === '모집 중' ? dday(a.start_date) : a.status, color: typeColor(a.activity_type) }));
   const defaultSlides = [
-    { eyebrow: '2026 SECOND HALF', line1: '새로운 가능성은', line2: '함께할 때 시작돼요', text: 'SHIFT 2기 신입부원을 모집합니다.', cta: '모집 자세히 보기', link: '/more', art: 'cube' },
+    { eyebrow: 'JOIN SHIFT', line1: '새로운 가능성은', line2: '함께할 때 시작돼요', text: 'SHIFT와 함께할 새로운 부원을 기다립니다.', cta: '모집 자세히 보기', link: '/more', art: 'cube' },
     { eyebrow: 'BUILD WITH SHIFT', line1: '아이디어를 세상에', line2: '실행으로 옮겨보세요', text: '2026 신규 프로젝트 팀 빌딩이 시작됩니다.', cta: '프로젝트 둘러보기', link: '/activities', art: 'rings' },
-    { eyebrow: 'SHIFT CONNECT', line1: '배움과 경험이 만나는', line2: '커뮤니티의 하루', text: '9월, SHIFT 네트워킹 데이에 초대합니다.', cta: '행사 확인하기', link: '/activities', art: 'network' }
+    { eyebrow: 'SHIFT CONNECT', line1: '배움과 경험이 만나는', line2: '커뮤니티의 하루', text: 'SHIFT의 행사와 모임을 확인해보세요.', cta: '행사 확인하기', link: '/activities', art: 'network' }
   ];
   const active = banners.filter(b => b.is_active);
   const slides = active.length
-    ? active.map(b => ({ eyebrow: b.eyebrow, line1: b.title_line1, line2: b.title_line2, text: b.description, cta: b.cta_label, link: b.cta_url, art: b.art, image: b.image_url, textOverlay: b.text_overlay }))
+    ? active.map(b => ({ eyebrow: b.eyebrow, line1: b.title_line1, line2: b.title_line2, text: b.description, cta: b.cta_label, link: b.cta_url, art: b.art, image: b.image_url }))
     : defaultSlides;
   const go = link => {
     if (!link) return;
@@ -31,9 +31,9 @@ export default function Home({ setPage, notices = [], activities = [], user, ban
   const recentNotices = notices.slice(0, 5);
   return <>
     <section className="hero container hero-with-rail">
-      <div className="hero-panel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      <div className={`hero-panel${slides.some(s => s.image) ? ' has-images' : ''}`} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <div className="hero-track" style={{ transform: `translateX(-${slide * 100}%)` }}>
-          {slides.map((s, i) => <div className={`hero-slide${s.image&&s.textOverlay?' with-text-overlay':''}`} key={i} aria-hidden={i !== slide}>
+          {slides.map((s, i) => <div className={`hero-slide${s.image?' with-image':''}`} key={i} aria-hidden={i !== slide}>
             <div className="hero-copy"><span className="eyebrow">{s.eyebrow}</span><h1>{s.line1}{s.line2 && <><br/><em>{s.line2}</em></>}</h1><p>{s.text}</p>{s.cta && <Button onClick={() => go(s.link)}>{s.cta}<ArrowRight size={17}/></Button>}</div>
             {s.image ? <img className="hero-image" src={s.image} alt=""/> : <HeroArt variant={s.art}/>}
           </div>)}
